@@ -5,101 +5,106 @@ const SOURCES = [
   { name: 'NguonC', detailUrl: 'https://phim.nguonc.com/api/film/' },
   { name: 'KKPhim', detailUrl: 'https://phimapi.com/phim/' },
   { name: 'OPhim', detailUrl: 'https://ophim1.com/v1/api/phim/' },
-  { name: 'VSMov', detailUrl: 'https://vsmov.com/api/phim/' }
+  { name: 'VSMov', detailUrl: 'https://vsmov.com/api/phim/' },
 ];
+
+const REQUEST_TIMEOUT_MS = 10_000;
+const fetchJson = async (url) => {
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    cache: 'no-store',
+  });
+
+  if (!response.ok) throw new Error(`Upstream ${response.status}: ${url}`);
+  return response.json();
+};
+
+async function fetchSourceMovie(source, slug) {
+  try {
+    const data = await fetchJson(`${source.detailUrl}${encodeURIComponent(slug)}`);
+    let movieInfo;
+    let episodesData = [];
+
+    if (source.name === 'OPhim') {
+      movieInfo = data.data?.item;
+      episodesData = movieInfo?.episodes || [];
+    } else {
+      movieInfo = data.movie || data.item;
+      episodesData = data.episodes || movieInfo?.episodes || [];
+    }
+
+    const episodes = [];
+    if (movieInfo && Array.isArray(episodesData)) {
+      for (const server of episodesData) {
+        const serverItems = server?.server_data || server?.items || [];
+        const first = serverItems[0];
+        const link = first?.link_m3u8 || first?.m3u8 || first?.embed || '';
+        if (link) {
+          episodes.push({
+            serverName: `${source.name} - ${server?.server_name || 'VIP'}`,
+            linkM3u8: link,
+          });
+        }
+      }
+    }
+
+    return { source: source.name, movieInfo, episodes };
+  } catch {
+    return { source: source.name, movieInfo: null, episodes: [] };
+  }
+}
 
 export async function crawlMovies() {
   try {
     await connectToDatabase();
 
-    const listRes = await fetch('https://phim.nguonc.com/api/films/phim-moi-cap-nhat?page=1');
-    const listData = await listRes.json();
-
-    if (!listData || !listData.items) {
-      return { success: false, error: "Lỗi gọi API danh sách từ NguonC" };
+    const listData = await fetchJson('https://phim.nguonc.com/api/films/phim-moi-cap-nhat?page=1');
+    if (!Array.isArray(listData?.items)) {
+      return { success: false, error: 'Lỗi gọi API danh sách từ NguonC' };
     }
 
     let count = 0;
 
     for (const item of listData.items) {
-      const slug = item.slug;
-      let baseMovieInfo = null;
-      let aggregatedEpisodes = [];
+      if (!item?.slug) continue;
 
-      for (const source of SOURCES) {
-        try {
-          const detailRes = await fetch(`${source.detailUrl}${slug}`);
-          const data = await detailRes.json();
+      const results = await Promise.all(SOURCES.map((source) => fetchSourceMovie(source, item.slug)));
+      const primary = results.find((result) => result.source === 'NguonC' && result.movieInfo) || results.find((result) => result.movieInfo);
+      const aggregatedEpisodes = results.flatMap((result) => result.episodes);
 
-          let movieInfo = null;
-          let episodesData = [];
+      if (!primary?.movieInfo || aggregatedEpisodes.length === 0) continue;
 
-          if (source.name === 'OPhim') {
-            movieInfo = data.data?.item;
-            episodesData = movieInfo?.episodes || [];
-          } else {
-            movieInfo = data.movie || data.item;
-            episodesData = data.episodes || movieInfo?.episodes || [];
-          }
+      const baseMovieInfo = primary.movieInfo;
+      const safeCategory = Array.isArray(baseMovieInfo.category)
+        ? baseMovieInfo.category.map((c) => c?.name || c).filter(Boolean)
+        : Array.isArray(baseMovieInfo.categories)
+          ? baseMovieInfo.categories.map((c) => c?.name || c).filter(Boolean)
+          : typeof baseMovieInfo.category === 'string'
+            ? [baseMovieInfo.category]
+            : [];
 
-          if (movieInfo) {
-            if (!baseMovieInfo || source.name === 'NguonC') {
-              baseMovieInfo = movieInfo;
-            }
+      const movieData = {
+        title: baseMovieInfo.name,
+        slug: baseMovieInfo.slug || item.slug,
+        poster: baseMovieInfo.poster_url || baseMovieInfo.thumb_url,
+        thumbnail: baseMovieInfo.thumb_url || baseMovieInfo.poster_url,
+        description: baseMovieInfo.content || baseMovieInfo.description || '',
+        year: baseMovieInfo.year,
+        category: safeCategory,
+        episodes: aggregatedEpisodes,
+      };
 
-            if (Array.isArray(episodesData)) {
-              episodesData.forEach(server => {
-                const serverItems = server.server_data || server.items || [];
-                if (serverItems.length > 0) {
-                  const link = serverItems[0].link_m3u8 || serverItems[0].m3u8 || serverItems[0].embed || '';
-                  if (link) {
-                    aggregatedEpisodes.push({
-                      serverName: `${source.name} - ${server.server_name || 'VIP'}`,
-                      linkM3u8: link
-                    });
-                  }
-                }
-              });
-            }
-          }
-        } catch (err) {
-          continue;
-        }
-      }
-
-      if (baseMovieInfo && aggregatedEpisodes.length > 0) {
-        // Fix lỗi category: Kiểm tra an toàn trước khi dùng .map()
-        let safeCategory = [];
-        if (Array.isArray(baseMovieInfo.category)) {
-          safeCategory = baseMovieInfo.category.map(c => c?.name || c);
-        } else if (Array.isArray(baseMovieInfo.categories)) {
-          safeCategory = baseMovieInfo.categories.map(c => c?.name || c);
-        } else if (typeof baseMovieInfo.category === 'string') {
-          safeCategory = [baseMovieInfo.category];
-        }
-
-        const movieData = {
-          title: baseMovieInfo.name,
-          slug: baseMovieInfo.slug,
-          poster: baseMovieInfo.poster_url || baseMovieInfo.thumb_url,
-          thumbnail: baseMovieInfo.thumb_url || baseMovieInfo.poster_url,
-          description: baseMovieInfo.content || baseMovieInfo.description,
-          year: baseMovieInfo.year,
-          category: safeCategory, // Đã fix lỗi
-          episodes: aggregatedEpisodes, 
-        };
-
-        await Movie.findOneAndUpdate(
-          { slug: movieData.slug },
-          movieData,
-          { upsert: true, returnDocument: 'after' }
-        );
-        count++;
-      }
+      await Movie.findOneAndUpdate(
+        { slug: movieData.slug },
+        { $set: movieData },
+        { upsert: true, returnDocument: 'after' }
+      );
+      count++;
     }
 
-    return { success: true, message: `Đã cào đa nguồn thành công ${count} bộ phim!` };
+    return { success: true, message: `Đã đồng bộ đa nguồn ${count} bộ phim.` };
   } catch (error) {
-    return { success: false, error: error.message };
+    console.error('[crawler]', error);
+    return { success: false, error: 'Không thể hoàn tất đồng bộ dữ liệu.' };
   }
 }
