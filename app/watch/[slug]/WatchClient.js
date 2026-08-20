@@ -1,117 +1,153 @@
 'use client';
-import { useState } from 'react';
-import Link from 'next/link';
+
+import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import VideoPlayer from '@/components/VideoPlayer';
 
+const stripHtml = (value = '') => value.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+
 export default function WatchClient({ movie }) {
-  const uniqueSources = [...new Set(movie.servers.map(s => s.sourceName))];
-  const [activeSource, setActiveSource] = useState(uniqueSources[0]);
+  const sources = useMemo(() => [...new Set(movie?.servers?.map((s) => s.sourceName).filter(Boolean))], [movie?.servers]);
+  const [activeSource, setActiveSource] = useState(sources[0] || '');
   const [activeServer, setActiveServer] = useState(0);
   const [activeEpisode, setActiveEpisode] = useState(0);
 
-  const currentSourceServers = movie.servers.filter(s => s.sourceName === activeSource);
+  const currentSourceServers = useMemo(
+    () => movie?.servers?.filter((server) => server.sourceName === activeSource) || [],
+    [movie?.servers, activeSource]
+  );
   const currentServerData = currentSourceServers[activeServer];
-  const currentEpLink = currentServerData?.episodes[activeEpisode]?.link;
+  const currentEpisode = currentServerData?.episodes?.[activeEpisode];
+  const description = stripHtml(movie?.description);
+
+  const changeSource = (source) => {
+    setActiveSource(source);
+    setActiveServer(0);
+    setActiveEpisode(0);
+  };
+
+  const changeServer = (index) => {
+    setActiveServer(index);
+    setActiveEpisode(0);
+  };
 
   return (
-    <div className="min-h-screen bg-[#150d0a] text-[#f3ead9] pb-16 pt-24 font-['Inter']">
-      
-      <div className="px-6 md:px-12 max-w-[1500px] mx-auto">
-        {/* Khung phát Video */}
-        <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.8)] border border-[#34241b] mb-10">
-          {currentEpLink ? (
-            <VideoPlayer key={currentEpLink} src={currentEpLink} />
-          ) : (
-            <div className="flex items-center justify-center h-full text-[#6e5c4c]">Đang tải luồng phát...</div>
-          )}
+    <main className="min-h-screen bg-[#120b09] pb-16 pt-[82px] text-[#f3ead9]">
+      <div className="mx-auto max-w-[1600px] px-4 md:px-8">
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_24px_70px_rgba(0,0,0,.45)]">
+          <div className="aspect-video w-full">
+            <VideoPlayer key={currentEpisode?.link || 'empty'} src={currentEpisode?.link} />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
-          <div className="min-w-0">
-            <h1 className="text-4xl md:text-[2.8rem] font-display text-[#f3ead9] mb-3 leading-tight tracking-wide drop-shadow-md">
-              {movie.title}
-            </h1>
-            
-            <div className="flex flex-wrap gap-3 mb-6 text-[13px] font-semibold">
-              <span className="bg-[#b23838] text-white px-3 py-1 rounded shadow-sm">🔥 HOT</span>
-              <span className="bg-[#1d130f] border border-[#34241b] text-[#d9a94d] px-3 py-1 rounded">Năm: {movie.year}</span>
-              <span className="bg-[#1d130f] border border-[#34241b] text-[#ab9985] px-3 py-1 rounded">{movie.quality || 'FHD'}</span>
+        <div className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_330px]">
+          <section className="min-w-0">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h1 className="font-display text-4xl leading-none tracking-wide text-white md:text-6xl">{movie.title}</h1>
+                {movie.originalTitle && <p className="mt-2 text-sm text-[#7f6d5d]">{movie.originalTitle}</p>}
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs font-extrabold">
+                <span className="rounded-full bg-[#b23838] px-3 py-1.5 text-white">{movie.quality || 'FHD'}</span>
+                <span className="rounded-full border border-white/10 bg-white/[.04] px-3 py-1.5 text-[#d9a94d]">{movie.year || 'Mới'}</span>
+              </div>
             </div>
 
-            <div className="text-[#ab9985] leading-relaxed mb-10 text-[15px] border-l-2 border-[#d9a94d] pl-4">
-              {movie.description?.replace(/<[^>]*>?/gm, '')}
-              {/* THÊM ĐOẠN NÀY DƯỚI MOVIE.DESCRIPTION */}
-            {movie.peoples && (
-              <div className="mb-10 bg-[#1d130f] border border-[#34241b] rounded-xl p-5">
-                {movie.peoples.directors && movie.peoples.directors.length > 0 && (
-                  <div className="mb-4">
-                    <span className="text-[#d9a94d] font-bold mr-2">Đạo diễn:</span>
-                    <span className="text-[#f3ead9] font-semibold">{movie.peoples.directors.map(d => d.name).join(', ')}</span>
+            {description && (
+              <p className="mt-5 max-w-4xl border-l-2 border-[#d9a94d] pl-4 text-sm leading-7 text-[#ab9985] md:text-[15px]">
+                {description}
+              </p>
+            )}
+
+            {movie.peoples && (movie.peoples.directors?.length > 0 || movie.peoples.casts?.length > 0) && (
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[.025] p-5">
+                {movie.peoples.directors?.length > 0 && (
+                  <div className="text-sm text-[#bca996]">
+                    <span className="font-bold text-[#d9a94d]">Đạo diễn:</span>{' '}
+                    {movie.peoples.directors.map((director) => director.name).join(', ')}
                   </div>
                 )}
-                {movie.peoples.casts && movie.peoples.casts.length > 0 && (
-                  <div>
-                    <span className="text-[#d9a94d] font-bold mb-2 block">Diễn viên chính:</span>
+                {movie.peoples.casts?.length > 0 && (
+                  <div className="mt-4">
+                    <div className="mb-2 text-sm font-bold text-[#d9a94d]">Diễn viên chính</div>
                     <div className="flex flex-wrap gap-2">
-                      {movie.peoples.casts.slice(0, 8).map((cast, idx) => (
-                        <div key={idx} className="bg-[#241a14] border border-[#34241b] rounded-full px-3 py-1.5 text-xs font-semibold text-[#ab9985] flex items-center gap-2">
-                           <span className="w-2 h-2 rounded-full bg-[#b23838]"></span> {cast.name}
-                        </div>
+                      {movie.peoples.casts.slice(0, 10).map((cast, index) => (
+                        <span key={`${cast.name}-${index}`} className="rounded-full border border-white/10 bg-white/[.035] px-3 py-1.5 text-xs font-semibold text-[#aa9886]">
+                          {cast.name}
+                        </span>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
             )}
-            {/* KẾT THÚC ĐOẠN THÊM */}
-            </div>
 
-            {/* Block Chọn Nguồn & Tập */}
-            <div className="bg-[#1d130f] border border-[#34241b] rounded-xl p-6 mb-8">
-              <h3 className="font-display text-[1.3rem] text-[#d9a94d] mb-4">1. Chọn Nguồn Phát</h3>
-              <div className="flex flex-wrap gap-2 mb-6">
-                {uniqueSources.map((source, idx) => (
-                  <button key={idx} onClick={() => { setActiveSource(source); setActiveServer(0); setActiveEpisode(0); }}
-                    className={`px-4 py-2 rounded font-bold text-[13px] transition-colors border ${activeSource === source ? 'bg-[#d9a94d] text-[#1d130a] border-[#d9a94d]' : 'bg-[#241a14] text-[#ab9985] border-[#34241b] hover:border-[#7a5c28]'}`}>
+            <div className="mt-8 rounded-2xl border border-white/10 bg-[#1a100c] p-4 md:p-6">
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="font-display text-2xl tracking-wide text-[#d9a94d]">Nguồn phát</div>
+                  <div className="mt-1 text-xs text-[#6e5c4c]">Chuyển nguồn khi máy chủ hiện tại gặp vấn đề.</div>
+                </div>
+                <span className="rounded-full border border-[#d9a94d]/20 bg-[#d9a94d]/5 px-3 py-1 text-[11px] font-bold text-[#d9a94d]">
+                  {sources.length} nguồn
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {sources.map((source) => (
+                  <button key={source} type="button" onClick={() => changeSource(source)} className={`rounded-full px-4 py-2 text-xs font-extrabold transition ${activeSource === source ? 'bg-[#d9a94d] text-[#160e08]' : 'border border-white/10 bg-white/[.035] text-[#a99785] hover:border-[#d9a94d]/40 hover:text-white'}`}>
                     {source}
                   </button>
                 ))}
               </div>
 
-              <h3 className="font-display text-[1.3rem] text-[#d9a94d] mb-4">2. Chọn Định Dạng (Server)</h3>
-              <div className="flex flex-wrap gap-2 mb-8">
-                {currentSourceServers.map((srv, idx) => (
-                  <button key={idx} onClick={() => { setActiveServer(idx); setActiveEpisode(0); }}
-                    className={`px-4 py-2 rounded font-bold text-[13px] transition-colors border ${activeServer === idx ? 'bg-[#b23838] text-white border-[#b23838]' : 'bg-[#241a14] text-[#ab9985] border-[#34241b] hover:border-[#7a5c28]'}`}>
-                    {srv.serverName}
-                  </button>
-                ))}
+              <div className="mt-7 border-t border-white/10 pt-6">
+                <div className="mb-3 text-xs font-extrabold uppercase tracking-[.18em] text-[#7f6d5d]">Server</div>
+                <div className="flex flex-wrap gap-2">
+                  {currentSourceServers.map((server, index) => (
+                    <button key={`${server.serverName}-${index}`} type="button" onClick={() => changeServer(index)} className={`rounded-lg px-3.5 py-2 text-xs font-bold transition ${activeServer === index ? 'bg-[#b23838] text-white shadow-lg' : 'border border-white/10 bg-white/[.035] text-[#a99785] hover:text-white'}`}>
+                      {server.serverName}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <h3 className="font-display text-[1.3rem] text-[#d9a94d] mb-4">3. Danh Sách Tập</h3>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                {currentServerData?.episodes.map((ep, idx) => (
-                  <button key={idx} onClick={() => setActiveEpisode(idx)}
-                    className={`px-3 py-2.5 rounded font-semibold text-[14px] flex items-center justify-center transition-colors ${activeEpisode === idx ? 'bg-[#d9a94d] text-[#1d130a]' : 'bg-[#241a14] text-[#ab9985] hover:bg-[#34241b]'}`}>
-                    {ep.name}
-                  </button>
-                ))}
+              <div className="mt-7 border-t border-white/10 pt-6">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="text-xs font-extrabold uppercase tracking-[.18em] text-[#7f6d5d]">Tập phim</div>
+                  {currentServerData?.episodes?.length ? <div className="text-xs text-[#6e5c4c]">{currentServerData.episodes.length} tập</div> : null}
+                </div>
+                <div className="grid max-h-[360px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-4 lg:grid-cols-6 custom-scrollbar">
+                  {(currentServerData?.episodes || []).map((episode, index) => (
+                    <button key={`${episode.name}-${index}`} type="button" onClick={() => setActiveEpisode(index)} className={`min-h-10 rounded-lg px-3 py-2 text-xs font-bold transition ${activeEpisode === index ? 'bg-[#d9a94d] text-[#160e08]' : 'border border-white/10 bg-white/[.035] text-[#a99785] hover:bg-white/[.07] hover:text-white'}`}>
+                      {episode.name || `Tập ${index + 1}`}
+                    </button>
+                  ))}
+                </div>
+                {!currentServerData?.episodes?.length && <div className="rounded-xl border border-dashed border-white/10 py-8 text-center text-sm text-[#6e5c4c]">Nguồn này chưa có tập phát được.</div>}
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Cột Phải Poster */}
-          <div className="hidden lg:block w-[320px] shrink-0 sticky top-[100px]">
-            <div className="rounded-xl overflow-hidden border border-[#34241b] bg-[#241a14] shadow-[0_10px_30px_rgba(0,0,0,0.8)] relative">
-              <img src={movie.poster} alt={movie.title} className="w-full aspect-[2/3] object-cover opacity-90"/>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none"></div>
-              <div className="absolute bottom-4 left-4 right-4 text-center">
-                 <button className="w-full bg-[#b23838] text-white py-2.5 rounded font-bold text-[14px] hover:brightness-110 transition">Đánh Giá: 8.5/10</button>
+          <aside className="xl:sticky xl:top-[90px] xl:self-start">
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#1a100c] shadow-2xl">
+              <div className="relative aspect-[2/3]">
+                {movie.poster ? (
+                  <Image src={movie.poster} alt={movie.title} fill sizes="330px" className="object-cover" />
+                ) : <div className="h-full w-full bg-[#21150f]" />}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#120b09] via-transparent to-transparent" />
+                <div className="absolute inset-x-4 bottom-4">
+                  <div className="rounded-xl border border-white/10 bg-black/45 p-4 backdrop-blur-md">
+                    <div className="text-xs font-bold text-[#d9a94d]">ĐANG XEM</div>
+                    <div className="mt-1 truncate font-bold text-white">{movie.title}</div>
+                    <div className="mt-1 text-xs text-[#9c8a77]">{currentEpisode?.name || 'Chọn một tập để bắt đầu'}</div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
