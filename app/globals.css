@@ -1,11 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap');
-
 @import "tailwindcss";
 
 :root {
-  --bg: #150d0a;
-  --bg-elevated: #1d130f;
-  --bg-card: #241a14;
+  --bg: #120b09;
+  --bg-elevated: #1a100c;
+  --bg-card: #21150f;
   --ink: #f3ead9;
   --ink-dim: #ab9985;
   --ink-faint: #6e5c4c;
@@ -13,30 +11,43 @@
   --gold-dim: #7a5c28;
   --maroon: #7f2020;
   --maroon-bright: #b23838;
-  --red: #b23838;
-  --line: #34241b;
+  --line: rgba(255,255,255,.08);
 }
 
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
-  background-color: var(--bg);
+  margin: 0;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(127,32,32,.10), transparent 28rem),
+    radial-gradient(circle at 85% 20%, rgba(217,169,77,.06), transparent 30rem),
+    var(--bg);
   color: var(--ink);
-  font-family: 'Inter', sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   overflow-x: hidden;
 }
 
 .font-display {
-  font-family: 'Bebas Neue', sans-serif;
-  letter-spacing: 0.04em;
+  font-family: "Bebas Neue", Impact, sans-serif;
+  letter-spacing: .04em;
 }
 
-/* Hiệu ứng dải phim (Sprocket holes) */
+::selection { background: rgba(217,169,77,.28); color: white; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+img { max-width: 100%; }
+button, a { -webkit-tap-highlight-color: transparent; }
+
+.custom-scrollbar { scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent; }
+.custom-scrollbar::-webkit-scrollbar { height: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 999px; }
+
 .filmstrip {
   height: 22px;
   width: 100%;
   background: repeating-linear-gradient(90deg, var(--line) 0 10px, transparent 10px 26px), var(--bg);
   position: relative;
-  display: flex;
-  align-items: center;
 }
 .filmstrip::before, .filmstrip::after {
   content: "";
@@ -48,16 +59,13 @@ body {
 .filmstrip::before { top: 4px; }
 .filmstrip::after { bottom: 4px; }
 
-/* Hiệu ứng nhịp đập ánh sáng vàng (Marquee Pulse) */
 @keyframes marquee-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(217,169,77,0.45), 0 0 18px 2px rgba(217,169,77,0.22); }
-  50% { box-shadow: 0 0 0 7px rgba(217,169,77,0), 0 0 26px 6px rgba(217,169,77,0.38); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217,169,77,0), 0 0 18px 2px rgba(217,169,77,.14); }
+  50% { box-shadow: 0 0 0 7px rgba(217,169,77,0), 0 0 26px 6px rgba(217,169,77,.28); }
 }
-.btn-play-marquee {
-  animation: marquee-pulse 2.4s ease-in-out infinite;
-}
+.btn-play-marquee { animation: marquee-pulse 2.4s ease-in-out infinite; }
 
-/* Thanh cuộn ngang tàng hình */
-.custom-scrollbar::-webkit-scrollbar { height: 5px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: var(--line); border-radius: 3px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
