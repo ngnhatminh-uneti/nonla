@@ -1,0 +1,7 @@
+import Link from 'next/link';
+
+export const metadata = { title: 'Giới thiệu — NÓN LÁ', description: 'Tìm hiểu về NÓN LÁ.' };
+
+export default function AboutPage() {
+  return <main className="min-h-screen bg-[#120b09] px-4 pb-16 pt-28 text-[#f3ead9] md:px-8"><div className="mx-auto max-w-4xl rounded-3xl border border-white/10 bg-white/[.025] p-6 md:p-10"><div className="font-display text-4xl text-[#d9a94d]">Giới thiệu NÓN LÁ</div><p className="mt-6 leading-8 text-[#ab9985]">NÓN LÁ được xây dựng với mục tiêu mang lại trải nghiệm khám phá và xem phim trực tuyến đơn giản, nhanh và thân thiện trên mọi thiết bị.</p><div className="mt-8 grid gap-4 md:grid-cols-3"><div className="rounded-2xl border border-white/10 bg-black/10 p-5"><b className="text-white">Giao diện điện ảnh</b><p className="mt-2 text-sm text-[#897666]">Tập trung vào nội dung, điều hướng rõ ràng và trải nghiệm mobile tốt.</p></div><div className="rounded-2xl border border-white/10 bg-black/10 p-5"><b className="text-white">Nhiều nguồn</b><p className="mt-2 text-sm text-[#897666]">Hỗ trợ nhiều nguồn phát để giảm phụ thuộc vào một máy chủ.</p></div><div className="rounded-2xl border border-white/10 bg-black/10 p-5"><b className="text-white">Tối ưu hiệu năng</b><p className="mt-2 text-sm text-[#897666]">Ưu tiên cache, lazy loading và trải nghiệm tải trang ổn định.</p></div></div><Link href="/" className="mt-8 inline-flex rounded-full bg-[#d9a94d] px-5 py-2.5 text-sm font-extrabold text-[#160e08]">Về trang chủ</Link></div></main>;
+}
