@@ -70,4 +70,4 @@ npm run build
 npm start
 ```
 
-GitHub Actions workflow trong `.github/workflows/ci.yml` đã được cấu hình cho lint, dependency audit, production build và CodeQL.
+GitHub Actions trong `.github/workflows/ci.yml` chạy lint, dependency audit, production build, Firebase file validation và CodeQL.
