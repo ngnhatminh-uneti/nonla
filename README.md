@@ -1,47 +1,55 @@
-# NÓN LÁ — Premium Movie UI
+# NÓN LÁ
 
-NÓN LÁ là ứng dụng Next.js App Router cho trải nghiệm khám phá và xem phim với giao diện cinematic, responsive và tối ưu dần theo từng phase.
+Website xem phim online được xây dựng bằng Next.js App Router, tập trung vào trải nghiệm điện ảnh, responsive UI, tốc độ tải và khả năng phục hồi khi nguồn dữ liệu bên ngoài gặp lỗi.
 
-## Development
+## Công nghệ
+
+- Next.js 16
+- React 19
+- Tailwind CSS 4
+- HLS.js
+- MongoDB / Mongoose
+
+## Chạy local
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
 Mở `http://localhost:3000`.
 
-## Environment
+## Biến môi trường
 
-Tạo `.env.local` cho môi trường local. Các secret/database credential phải nằm ngoài Git.
+Copy `.env.example` thành `.env.local` và cấu hình:
 
 ```env
-MONGODB_URI=...
-CRON_SECRET=...
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+MONGODB_URI=
+CRON_SECRET=
 ```
 
-`CRON_SECRET` được dùng để bảo vệ `POST /api/crawler`. Request hợp lệ phải gửi:
+`CRON_SECRET` là bắt buộc nếu sử dụng `POST /api/crawler`. Endpoint yêu cầu header `Authorization: Bearer <CRON_SECRET>`.
 
-```http
-Authorization: Bearer <CRON_SECRET>
-```
-
-## Scripts
+## Kiểm tra production
 
 ```bash
-npm run dev
 npm run lint
+npm audit --audit-level=high
 npm run build
-npm run start
+npm start
 ```
 
-## Architecture notes
+GitHub Actions tự động chạy lint, dependency audit, production build và CodeQL cho các branch/PR liên quan.
 
-- App Router và Server Components được ưu tiên cho các trang dữ liệu.
-- `next/image` được dùng cho các ảnh giao diện quan trọng.
-- API crawler có timeout, xác thực secret và không trả chi tiết exception ra client.
-- Response security headers được cấu hình trong `next.config.mjs`.
+## Cấu trúc chính
 
-## Branching
+- `app/` — App Router, pages, metadata, API route
+- `components/` — Header, Hero, movie rows, player và UI dùng lại
+- `utils/` — API client và crawler
+- `models/` / `lib/` — lớp dữ liệu MongoDB
+- `public/` — tài nguyên tĩnh
 
-Các thay đổi nâng cấp được phát triển trên branch feature/copy trước khi merge vào branch UI chính.
+## Security
+
+Không commit `.env.local` hoặc credentials. Xem `SECURITY.md` để báo cáo lỗ hổng riêng tư.
