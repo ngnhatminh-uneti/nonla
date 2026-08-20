@@ -78,7 +78,7 @@ main > .grid > aside.sticky {
   box-shadow: 0 16px 38px rgba(0,0,0,.28);
 }
 
-/* Header proportions: bám index.html, palette bám ui/phase-1-premium */
+/* Header: gần cấu trúc index.html, màu sắc theo ui/phase-1-premium */
 #header { min-height: 68px; }
 #header .main-logo-img { height: 44px !important; width: auto; }
 #header .logo-text { font-size: 31px !important; line-height: 1 !important; letter-spacing: 2.4px !important; }
