@@ -10,6 +10,16 @@ Website xem phim online được xây dựng bằng Next.js App Router, tập tr
 - HLS.js
 - MongoDB / Mongoose
 
+## Nguồn dữ liệu phim
+
+NÓN LÁ hiện chỉ tích hợp 3 nguồn:
+
+- **NguonC** — nguồn ưu tiên khi reverse search từ tên gốc + năm phát hành.
+- **KKPhim** — nguồn chính của homepage và fallback khi không tìm thấy phim tương ứng trên NguonC.
+- **VSMov** — nguồn vệ tinh/fallback thứ ba, được dò theo slug hoặc tên phim + năm.
+
+Không còn tích hợp API, image host hoặc crawler của OPhim.
+
 ## Chạy local
 
 ```bash
