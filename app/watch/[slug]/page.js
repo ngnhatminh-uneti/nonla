@@ -3,238 +3,236 @@ import { cache } from 'react';
 import WatchClient from './WatchClient';
 import { getMoviePeoplesAPI } from '@/utils/api';
 
-const getAggregatedMovie = cache(async function getAggregatedMovie(slug) {
-  const safeSlug = encodeURIComponent(slug);
-  let baseMovieInfo = null;
-  let serversList = [];
+const CACHE_OPTIONS = { next: { revalidate: 300 } };
 
-  const extractEpisodes = (sourceName, data) => {
-    let epsData = [];
-    if (sourceName === 'OPhim') epsData = data?.data?.item?.episodes || [];
-    else epsData = data?.episodes || data?.movie?.episodes || data?.item?.episodes || [];
+function normalizeTitle(value) {
+  return value ? value.toLowerCase().replace(/[\s\W_]+/g, '') : '';
+}
 
-    if (!Array.isArray(epsData)) return;
+function cleanSearchTitle(value) {
+  return String(value || '').replace(/\(.*?\)/g, '').trim();
+}
 
-    epsData.forEach((srv, index) => {
-      const srvItems = srv.server_data || srv.items || [];
-      const parsedEps = Array.isArray(srvItems)
-        ? srvItems.map((ep) => ({
-            name: ep.name || 'Tập',
-            link: ep.link_m3u8 || ep.m3u8 || ep.embed || ep.link_embed || '',
-          })).filter((ep) => ep.link)
-        : [];
+function isValidMoviePayload(data) {
+  return Boolean(data && (data.status || data.movie || data.item || data.data?.item));
+}
 
-      if (parsedEps.length > 0) {
-        serversList.push({
-          sourceName,
-          serverName: srv.server_name || `Server ${index + 1}`,
-          episodes: parsedEps,
-        });
-      }
-    });
+function toMovieInfo(movie, cdnDomain = 'https://phimimg.com') {
+  if (!movie) return null;
+  const toImage = (path) => {
+    if (!path) return '';
+    if (/^https?:\/\//i.test(path)) return path;
+    const base = cdnDomain.replace(/\/$/, '');
+    return `${base}/${String(path).replace(/^\//, '')}`;
   };
 
-  let nguonC_Base = false;
+  return {
+    title: movie.name || movie.title || 'Đang cập nhật',
+    originalTitle: movie.original_name || movie.origin_name || movie.original_title || '',
+    slug: movie.slug || '',
+    poster: toImage(movie.poster_url) || toImage(movie.thumb_url),
+    description: movie.content || movie.description || 'Đang cập nhật nội dung...',
+    year: movie.year || 'Đang cập nhật',
+    quality: movie.quality || 'HD',
+  };
+}
+
+function extractEpisodes(sourceName, data, serversList) {
+  const epsData = sourceName === 'OPhim'
+    ? data?.data?.item?.episodes || []
+    : data?.episodes || data?.movie?.episodes || data?.item?.episodes || [];
+
+  if (!Array.isArray(epsData)) return;
+
+  epsData.forEach((server, index) => {
+    const serverItems = server?.server_data || server?.items || [];
+    if (!Array.isArray(serverItems)) return;
+
+    const episodes = serverItems
+      .map((episode) => ({
+        name: episode?.name || 'Tập',
+        link: episode?.link_m3u8 || episode?.m3u8 || episode?.embed || episode?.link_embed || '',
+      }))
+      .filter((episode) => episode.link);
+
+    if (!episodes.length) return;
+
+    const dedupedEpisodes = Array.from(
+      new Map(episodes.map((episode) => [`${episode.name}|${episode.link}`, episode])).values()
+    );
+
+    serversList.push({
+      sourceName,
+      serverName: server?.server_name || `Server ${index + 1}`,
+      episodes: dedupedEpisodes,
+    });
+  });
+}
+
+function findMatch(items, movie) {
+  if (!Array.isArray(items) || !items.length || !movie) return null;
+
+  const title = normalizeTitle(movie.name || movie.title);
+  const originalTitle = normalizeTitle(movie.origin_name || movie.original_name || movie.original_title);
+  const year = String(movie.year || '');
+
+  const exactYearMatch = items.find((item) => {
+    const itemTitle = normalizeTitle(item?.name);
+    const itemOriginal = normalizeTitle(item?.original_name || item?.origin_name || item?.original_title);
+    const nameMatch = (originalTitle && itemOriginal === originalTitle) || itemTitle === title;
+    return nameMatch && String(item?.year || '') === year;
+  });
+
+  if (exactYearMatch) return exactYearMatch;
+
+  const closeYearMatch = items.find((item) => {
+    const itemTitle = normalizeTitle(item?.name);
+    const itemOriginal = normalizeTitle(item?.original_name || item?.origin_name || item?.original_title);
+    const closeName =
+      (itemOriginal && originalTitle && (itemOriginal.includes(originalTitle) || originalTitle.includes(itemOriginal))) ||
+      (itemTitle && title && (itemTitle.includes(title) || title.includes(itemTitle)));
+    return closeName && String(item?.year || '') === year;
+  });
+
+  if (closeYearMatch) return closeYearMatch;
+
+  return items.find((item) => {
+    const itemTitle = normalizeTitle(item?.name);
+    const itemOriginal = normalizeTitle(item?.original_name || item?.origin_name || item?.original_title);
+    return (originalTitle && itemOriginal === originalTitle) || itemTitle === title;
+  }) || null;
+}
+
+async function fetchJson(url) {
   try {
-    const nguonCRes = await fetch(`https://phim.nguonc.com/api/film/${safeSlug}`, { next: { revalidate: 300 } });
-    if (nguonCRes.ok) {
-      const nguonCData = await nguonCRes.json();
-      if (nguonCData?.movie) {
-        const m = nguonCData.movie;
-        baseMovieInfo = {
-          title: m.name,
-          originalTitle: m.original_name || m.origin_name || '',
-          slug: m.slug,
-          poster: m.poster_url || m.thumb_url,
-          description: m.content || m.description || 'Đang cập nhật nội dung...',
-          year: m.year || 'Đang cập nhật',
-          quality: m.quality || 'HD',
-        };
-        extractEpisodes('NguonC', nguonCData);
-        nguonC_Base = true;
-      }
+    const response = await fetch(url, CACHE_OPTIONS);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+async function resolveNguonCFromKkMovie(kkData) {
+  const kkMovie = kkData?.movie;
+  if (!kkMovie) return null;
+
+  const keyword = cleanSearchTitle(
+    kkMovie.origin_name || kkMovie.original_name || kkMovie.original_title || kkMovie.name || kkMovie.title
+  );
+  if (!keyword) return null;
+
+  const searchData = await fetchJson(
+    `https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}`
+  );
+  const match = findMatch(searchData?.items, kkMovie);
+  if (!match?.slug) return null;
+
+  const detailData = await fetchJson(`https://phim.nguonc.com/api/film/${encodeURIComponent(match.slug)}`);
+  if (!detailData?.movie) return null;
+
+  return detailData;
+}
+
+const getAggregatedMovie = cache(async function getAggregatedMovie(slug) {
+  const safeSlug = encodeURIComponent(slug);
+
+  // LỚP 1: luôn lấy đồng thời NguonC + KKPhim.
+  // Homepage Nón Lá dùng slug của KKPhim, nên KKPhim phải được xác định trước
+  // khi quyết định có đảo NguonC thành nguồn gốc hay không.
+  const [nguonCData, kkData] = await Promise.all([
+    fetchJson(`https://phim.nguonc.com/api/film/${safeSlug}`),
+    fetchJson(`https://phimapi.com/phim/${safeSlug}`),
+  ]);
+
+  let baseMovieInfo = null;
+  const serversList = [];
+
+  // LỚP 2: nếu slug xuất phát từ KKPhim, dùng Tên gốc + Năm phát hành
+  // để tìm ngược trên NguonC. Nếu tìm thấy, NguonC trở thành nguồn chính.
+  if (kkData?.status && kkData?.movie) {
+    const matchedNguonCData = await resolveNguonCFromKkMovie(kkData);
+
+    if (matchedNguonCData?.movie) {
+      baseMovieInfo = toMovieInfo(matchedNguonCData.movie);
+      extractEpisodes('NguonC', matchedNguonCData, serversList);
+    } else {
+      const cdnDomain = 'https://phimimg.com';
+      const kkMovie = kkData.movie;
+      baseMovieInfo = toMovieInfo(kkMovie, cdnDomain);
     }
-  } catch {}
 
-  let kkMovieCache = null;
-  if (!nguonC_Base) {
-    try {
-      const kkRes = await fetch(`https://phimapi.com/phim/${safeSlug}`, { next: { revalidate: 300 } });
-      if (kkRes.ok) {
-        const kkData = await kkRes.json();
-        if (kkData?.status && kkData?.movie) kkMovieCache = kkData;
-      }
-    } catch {}
-
-    if (kkMovieCache) {
-      const mKK = kkMovieCache.movie;
-      const searchKeyword = mKK.origin_name || mKK.original_title || mKK.name || mKK.title;
-      const cleanKeyword = searchKeyword.replace(/\(.*\)/g, '').trim();
-      const targetYear = mKK.year;
-
-      try {
-        const searchRes = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(cleanKeyword)}`, { next: { revalidate: 300 } });
-        if (searchRes.ok) {
-          const searchData = await searchRes.json();
-          const items = searchData?.items || [];
-
-          if (items.length > 0) {
-            const normalize = (s) => s ? s.toLowerCase().replace(/[\s\W_]+/g, '') : '';
-            const t1 = normalize(mKK.name || mKK.title);
-            const t2 = normalize(mKK.origin_name || mKK.original_title);
-
-            let match = items.find((item) => {
-              const i1 = normalize(item.name);
-              const i2 = normalize(item.original_name || item.origin_name);
-              const isNameMatch = (i2 && t2 && i2 === t2) || (i1 === t1) || i1.includes(t1) || t1.includes(i1);
-              return isNameMatch && item.year == targetYear;
-            });
-
-            if (!match) {
-              match = items.find((item) => {
-                const i2 = normalize(item.original_name || item.origin_name);
-                return i2 && t2 && i2 === t2;
-              });
-            }
-
-            if (match?.slug) {
-              const detailRes = await fetch(`https://phim.nguonc.com/api/film/${encodeURIComponent(match.slug)}`, { next: { revalidate: 300 } });
-              if (detailRes.ok) {
-                const detailData = await detailRes.json();
-                if (detailData?.movie) {
-                  const nm = detailData.movie;
-                  baseMovieInfo = {
-                    title: nm.name,
-                    originalTitle: nm.original_name || nm.origin_name || '',
-                    slug: nm.slug,
-                    poster: nm.poster_url || nm.thumb_url,
-                    description: nm.content || nm.description || 'Đang cập nhật nội dung...',
-                    year: nm.year || 'Đang cập nhật',
-                    quality: nm.quality || 'HD',
-                  };
-                  extractEpisodes('NguonC', detailData);
-                  nguonC_Base = true;
-                }
-              }
-            }
-          }
-        }
-      } catch {}
-
-      if (!nguonC_Base) {
-        const cdnDomain = 'https://phimimg.com';
-        const getImg = (path) => {
-          if (!path) return '';
-          if (path.startsWith('http')) return path;
-          const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-          return `${cdnDomain}/${cleanPath}`;
-        };
-
-        baseMovieInfo = {
-          title: mKK.name || mKK.title,
-          originalTitle: mKK.origin_name || mKK.original_title || '',
-          slug: mKK.slug,
-          poster: getImg(mKK.poster_url) || getImg(mKK.thumb_url),
-          description: mKK.content || mKK.description || 'Đang cập nhật nội dung...',
-          year: mKK.year || 'Đang cập nhật',
-          quality: mKK.quality || 'HD',
-        };
-      }
-
-      extractEpisodes('KKPhim', kkMovieCache);
-    }
+    // KKPhim vẫn luôn là fallback/source hợp lệ, kể cả khi NguonC đã được chọn.
+    extractEpisodes('KKPhim', kkData, serversList);
+  } else if (nguonCData?.movie) {
+    // Link NguonC cũ / deep-link trực tiếp: giữ nguyên khả năng đọc bằng slug.
+    baseMovieInfo = toMovieInfo(nguonCData.movie);
+    extractEpisodes('NguonC', nguonCData, serversList);
   }
 
   if (!baseMovieInfo) return null;
 
-  const EXTRA_SOURCES = [
+  // LỚP 3: giữ nguyên cơ chế truy quét vệ tinh theo tên + năm.
+  const extraSources = [
     {
       name: 'OPhim',
-      detailUrl: (s) => `https://ophim1.com/v1/api/phim/${encodeURIComponent(s)}`,
-      searchUrl: (kw) => `https://ophim1.com/v1/api/tim-kiem?keyword=${encodeURIComponent(kw)}`,
+      detailUrl: (value) => `https://ophim1.com/v1/api/phim/${encodeURIComponent(value)}`,
+      searchUrl: (keyword) => `https://ophim1.com/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}`,
     },
     {
       name: 'VSMov',
-      detailUrl: (s) => `https://vsmov.com/api/phim/${encodeURIComponent(s)}`,
-      searchUrl: (kw) => `https://vsmov.com/v1/api/tim-kiem?keyword=${encodeURIComponent(kw)}`,
+      detailUrl: (value) => `https://vsmov.com/api/phim/${encodeURIComponent(value)}`,
+      searchUrl: (keyword) => `https://vsmov.com/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}`,
     },
   ];
 
-  if (serversList.every((s) => s.sourceName !== 'KKPhim')) {
-    EXTRA_SOURCES.push({
-      name: 'KKPhim',
-      detailUrl: (s) => `https://phimapi.com/phim/${encodeURIComponent(s)}`,
-      searchUrl: (kw) => `https://phimapi.com/v1/api/tim-kiem?keyword=${encodeURIComponent(kw)}`,
-    });
-  }
+  await Promise.all(extraSources.map(async (source) => {
+    let data = await fetchJson(source.detailUrl(slug));
 
-  await Promise.all(EXTRA_SOURCES.map(async (src) => {
-    try {
-      let res = await fetch(src.detailUrl(slug), { next: { revalidate: 300 } });
-      let data = res.ok ? await res.json() : null;
-      let hasData = data && (data.status || data.movie || data.item);
+    if (!isValidMoviePayload(data)) {
+      const keyword = cleanSearchTitle(baseMovieInfo.originalTitle || baseMovieInfo.title);
+      if (!keyword) return;
 
-      if (!hasData) {
-        const searchKeyword = baseMovieInfo.originalTitle || baseMovieInfo.title;
-        let searchRes = await fetch(src.searchUrl(searchKeyword), { next: { revalidate: 300 } });
-        let searchData = searchRes.ok ? await searchRes.json() : null;
-        let items = searchData?.data?.items || searchData?.items || [];
+      let searchData = await fetchJson(source.searchUrl(keyword));
+      let items = searchData?.data?.items || searchData?.items || [];
 
-        if (items.length === 0) {
-          const cleanKeyword = searchKeyword.replace(/\(.*\)/g, '').trim();
-          searchRes = await fetch(src.searchUrl(cleanKeyword), { next: { revalidate: 300 } });
-          searchData = searchRes.ok ? await searchRes.json() : null;
-          items = searchData?.data?.items || searchData?.items || [];
-        }
-
-        if (items.length > 0) {
-          const normalize = (s) => s ? s.toLowerCase().replace(/[\s\W_]+/g, '') : '';
-          const t1 = normalize(baseMovieInfo.title);
-          const t2 = normalize(baseMovieInfo.originalTitle);
-          const targetYear = baseMovieInfo.year;
-
-          let match = items.find((item) => {
-            const i1 = normalize(item.name);
-            const i2 = normalize(item.origin_name || item.original_title);
-            return ((i2 && t2 && i2 === t2) || i1 === t1) && item.year == targetYear;
-          });
-
-          if (!match) {
-            match = items.find((item) => {
-              const i1 = normalize(item.name);
-              const i2 = normalize(item.origin_name || item.original_title);
-              const close = i1.includes(t1) || t1.includes(i1) || (i2 && t2 && (i2.includes(t2) || t2.includes(i2)));
-              return close && item.year == targetYear;
-            });
-          }
-
-          if (!match) {
-            match = items.find((item) => {
-              const i1 = normalize(item.name);
-              const i2 = normalize(item.origin_name || item.original_title);
-              return (i2 && t2 && i2 === t2) || i1 === t1;
-            });
-          }
-
-          if (match?.slug) {
-            const fallbackRes = await fetch(src.detailUrl(match.slug), { next: { revalidate: 300 } });
-            if (fallbackRes.ok) {
-              data = await fallbackRes.json();
-              hasData = true;
-            }
-          }
-        }
+      if (!items.length) {
+        const cleanedKeyword = cleanSearchTitle(keyword);
+        searchData = await fetchJson(source.searchUrl(cleanedKeyword));
+        items = searchData?.data?.items || searchData?.items || [];
       }
 
-      if (hasData) extractEpisodes(src.name, data);
-    } catch {}
+      const match = findMatch(items, {
+        name: baseMovieInfo.title,
+        origin_name: baseMovieInfo.originalTitle,
+        year: baseMovieInfo.year,
+      });
+
+      if (match?.slug) {
+        data = await fetchJson(source.detailUrl(match.slug));
+      }
+    }
+
+    if (isValidMoviePayload(data)) {
+      extractEpisodes(source.name, data, serversList);
+    }
   }));
 
-  const peoples = await getMoviePeoplesAPI(slug);
+  const peoples = await getMoviePeoplesAPI(baseMovieInfo.slug || slug);
+
+  // Loại bỏ server/episode trùng nhau khi nhiều nguồn trả cùng stream.
+  const uniqueServers = [];
+  const seenServerKeys = new Set();
+  for (const server of serversList) {
+    const key = `${server.sourceName}|${server.serverName}|${server.episodes.map((episode) => episode.link).join(',')}`;
+    if (seenServerKeys.has(key)) continue;
+    seenServerKeys.add(key);
+    uniqueServers.push(server);
+  }
 
   return {
     ...baseMovieInfo,
-    servers: serversList,
+    servers: uniqueServers,
     peoples,
   };
 });
@@ -242,11 +240,14 @@ const getAggregatedMovie = cache(async function getAggregatedMovie(slug) {
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
   const movie = await getAggregatedMovie(resolvedParams.slug);
+
   if (!movie) return { title: 'Không tìm thấy phim - NÓN LÁ' };
 
   return {
     title: `Xem phim ${movie.title} (${movie.year}) - NÓN LÁ`,
-    description: movie.description?.replace(/<[^>]*>?/gm, '').substring(0, 160) || `Xem ${movie.title} trên NÓN LÁ.`,
+    description:
+      movie.description?.replace(/<[^>]*>?/gm, '').substring(0, 160) ||
+      `Xem ${movie.title} trên NÓN LÁ.`,
   };
 }
 
@@ -259,8 +260,13 @@ export default async function Page({ params }) {
       <div className="min-h-screen bg-[#150d0a] text-white flex flex-col items-center justify-center pt-20">
         <div className="bg-[#1d130f] border border-[#34241b] p-10 rounded-xl text-center max-w-lg shadow-2xl">
           <h1 className="text-2xl font-display mb-4 text-[#b23838]">Rất tiếc, phim không tồn tại!</h1>
-          <p className="text-[#ab9985] mb-8">Có thể đường dẫn bị lỗi, hoặc toàn hệ thống chưa cập nhật bộ phim này.</p>
-          <Link href="/" className="bg-[#d9a94d] text-[#1d130a] font-bold px-6 py-3 rounded hover:brightness-110 transition shadow-[0_0_15px_rgba(217,169,77,0.4)]">
+          <p className="text-[#ab9985] mb-8">
+            Có thể đường dẫn bị lỗi, hoặc toàn hệ thống chưa cập nhật bộ phim này.
+          </p>
+          <Link
+            href="/"
+            className="bg-[#d9a94d] text-[#1d130a] font-bold px-6 py-3 rounded hover:brightness-110 transition shadow-[0_0_15px_rgba(217,169,77,0.4)]"
+          >
             Quay Về Trang Chủ
           </Link>
         </div>
