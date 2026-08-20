@@ -24,7 +24,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body className="min-h-screen bg-[#141414] text-[#e5e5e5] antialiased" suppressHydrationWarning>
+      <body className="min-h-screen bg-[#150d0a] text-[#f3ead9] antialiased" suppressHydrationWarning>
         <VietnamOnlyGate>
           <FirebaseProvider>
             <Header />
