@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css');
 @import "tailwindcss";
 
 :root {
@@ -39,22 +40,24 @@ body {
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 img { max-width: 100%; }
 button, a { -webkit-tap-highlight-color: transparent; }
+button, input, textarea, select { font: inherit; }
 
 .custom-scrollbar { scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent; }
-.custom-scrollbar::-webkit-scrollbar { height: 5px; }
+.custom-scrollbar::-webkit-scrollbar { height: 5px; width: 5px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 999px; }
 
-.top-ranking-rail {
-  position: sticky !important;
-  top: 92px !important;
-  align-self: start !important;
-  height: fit-content !important;
+/* Top Phim: các khối sidebar bình thường, cuộn cùng trang với Nón Lá Đề Cử / Phim Bộ Mới / Phim Lẻ Mới.
+   Không sticky, không fixed, không tạo scrollbar riêng. */
+.top-ranking-rail,
+.top-ranking-rail > div,
+.top-ranking-card {
+  position: static !important;
+  top: auto !important;
   max-height: none !important;
+  height: auto !important;
   overflow: visible !important;
-  z-index: 30;
 }
-.top-ranking-rail > div { overflow: visible !important; max-height: none !important; }
 .top-ranking-card {
   background: var(--bg-elevated);
   border: 1px solid var(--line);
@@ -66,30 +69,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
   box-shadow: 0 16px 38px rgba(0,0,0,.28);
 }
 
-/* Desktop: two Top Phim blocks are fixed beside Nón Lá Đề Cử / Phim Bộ Mới / Phim Lẻ Mới.
-   They never become an independent scroll area. */
-@media (min-width: 1024px) {
-  main > .grid > aside {
-    position: fixed !important;
-    top: 92px !important;
-    right: max(24px, calc((100vw - 1500px) / 2)) !important;
-    width: 320px !important;
-    max-height: none !important;
-    height: auto !important;
-    overflow: visible !important;
-    z-index: 30 !important;
-  }
-}
-@media (min-width: 1280px) {
-  main > .grid > aside { width: 360px !important; }
-}
-
 .index-header-input::placeholder { color: #8b7867; }
 .index-header-menu {
   background: rgba(0,0,0,.96);
   border: 1px solid rgba(255,255,255,.1);
   box-shadow: 0 10px 30px rgba(0,0,0,1);
 }
+.index-header-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(217,169,77,.08); }
 
 .filmstrip {
   height: 22px;
