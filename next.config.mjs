@@ -4,8 +4,13 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'phimimg.com' },
-      { protocol: 'https', hostname: 'phimapi.com' },
       { protocol: 'https', hostname: '**.phimimg.com' },
+      { protocol: 'https', hostname: 'phimapi.com' },
+      { protocol: 'https', hostname: 'phim.nguonc.com' },
+      { protocol: 'https', hostname: 'ophim1.com' },
+      { protocol: 'https', hostname: '**.ophim1.com' },
+      { protocol: 'https', hostname: 'vsmov.com' },
+      { protocol: 'https', hostname: '**.vsmov.com' },
     ],
   },
   async headers() {
