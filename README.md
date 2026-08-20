@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# NÓN LÁ — Premium Movie UI
 
-## Getting Started
+NÓN LÁ là ứng dụng Next.js App Router cho trải nghiệm khám phá và xem phim với giao diện cinematic, responsive và tối ưu dần theo từng phase.
 
-First, run the development server:
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+Mở `http://localhost:3000`.
+
+## Environment
+
+Tạo `.env.local` cho môi trường local. Các secret/database credential phải nằm ngoài Git.
+
+```env
+MONGODB_URI=...
+CRON_SECRET=...
+```
+
+`CRON_SECRET` được dùng để bảo vệ `POST /api/crawler`. Request hợp lệ phải gửi:
+
+```http
+Authorization: Bearer <CRON_SECRET>
+```
+
+## Scripts
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run build
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Architecture notes
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+- App Router và Server Components được ưu tiên cho các trang dữ liệu.
+- `next/image` được dùng cho các ảnh giao diện quan trọng.
+- API crawler có timeout, xác thực secret và không trả chi tiết exception ra client.
+- Response security headers được cấu hình trong `next.config.mjs`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Branching
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Các thay đổi nâng cấp được phát triển trên branch feature/copy trước khi merge vào branch UI chính.
