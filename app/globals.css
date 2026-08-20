@@ -1,62 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap');
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css');
 @import "tailwindcss";
-
-:root {
-  --bg: #150d0a;
-  --bg-elevated: #1d130f;
-  --bg-card: #241a14;
-  --ink: #f3ead9;
-  --ink-dim: #ab9985;
-  --ink-faint: #6e5c4c;
-  --gold: #d9a94d;
-  --gold-dim: #7a5c28;
-  --maroon: #7f2020;
-  --maroon-bright: #b23838;
-  --red: #b23838;
-  --line: #34241b;
-}
-
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Be Vietnam Pro', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow-x: hidden; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; font-synthesis: none; }
-.font-display { font-family: 'Be Vietnam Pro', system-ui, sans-serif; letter-spacing: -.015em; font-weight: 800; }
-::selection { background: rgba(217,169,77,.28); color: #fff; }
-:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
-img { max-width: 100%; }
-button, a { -webkit-tap-highlight-color: transparent; }
-button, input, textarea, select { font: inherit; }
-.custom-scrollbar { scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent; }
-.custom-scrollbar::-webkit-scrollbar { height: 5px; width: 5px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 999px; }
-
-/* Top Phim là sidebar bình thường, cuộn cùng toàn trang. */
-.top-ranking-rail, .top-ranking-rail > div, .top-ranking-card, main > .grid > aside, main > .grid > aside.sticky { position: static !important; top: auto !important; height: auto !important; max-height: none !important; overflow: visible !important; align-self: start !important; }
-.top-ranking-card { background: var(--bg-elevated); border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(0,0,0,.22); transition: border-color .25s ease, transform .25s ease, box-shadow .25s ease; }
-.top-ranking-card:hover { border-color: rgba(217,169,77,.35); box-shadow: 0 16px 38px rgba(0,0,0,.28); }
-
-/* Header: palette premium, tỷ lệ/logo/icon bám index.html. */
-#header { min-height: 68px; }
-#header .main-logo-img { height: 44px !important; width: auto; }
-#header .logo-text { font-size: 31px !important; line-height: 1 !important; letter-spacing: 2.4px !important; }
-#header .dropdown-selected { color: var(--ink); }
-#header .download-app-btn { min-width: 116px; min-height: 40px; }
-#header .download-app-btn span:first-child { font-size: 0; display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; }
-#header .download-app-btn span:first-child::before { content: '\f17b'; font-family: 'Font Awesome 6 Brands'; font-size: 20px; line-height: 1; color: #3DDC84; }
-#header .index-header-input { font-size: 15px !important; }
-#header .filters { gap: 24px !important; }
-#header .filters button, #header .filters > div > button { font-size: 15px !important; }
-#header .search-suggestions { background: rgba(20,20,20,.96); }
-.index-header-input::placeholder { color: #8b7867; }
-.index-header-menu { background: rgba(0,0,0,.96); border: 1px solid rgba(255,255,255,.1); box-shadow: 0 10px 30px rgba(0,0,0,1); }
-.index-header-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(217,169,77,.08); }
-@media (max-width: 1024px) { #header .main-logo-img { height: 36px !important; } #header .logo-text { font-size: 27px !important; } }
-@media (max-width: 768px) { #header .main-logo-img { height: 32px !important; } #header .logo-text { font-size: 23px !important; } #header .download-app-btn { min-width: 40px; width: 40px; padding-inline: 0; } #header .download-app-btn span:last-child { display: none !important; } }
-
-.filmstrip { height: 22px; width: 100%; background: repeating-linear-gradient(90deg, var(--line) 0 10px, transparent 10px 26px), var(--bg); position: relative; }
-.filmstrip::before, .filmstrip::after { content: ""; position: absolute; left: 0; right: 0; height: 1px; background: var(--line); }
-.filmstrip::before { top: 4px; } .filmstrip::after { bottom: 4px; }
-@keyframes marquee-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(217,169,77,.45), 0 0 18px 2px rgba(217,169,77,.22); } 50% { box-shadow: 0 0 0 7px rgba(217,169,77,0), 0 0 26px 6px rgba(217,169,77,.38); } }
-.btn-play-marquee { animation: marquee-pulse 2.4s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+:root { --bg:#150d0a; --bg-elevated:#1d130f; --bg-card:#241a14; --ink:#f3ead9; --ink-dim:#ab9985; --ink-faint:#6e5c4c; --gold:#d9a94d; --gold-dim:#7a5c28; --maroon:#7f2020; --maroon-bright:#b23838; --red:#b23838; --line:#34241b; }
+*{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--ink);font-family:'Be Vietnam Pro',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow-x:hidden;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;font-synthesis:none}.font-display{font-family:'Be Vietnam Pro',system-ui,sans-serif;letter-spacing:-.015em;font-weight:800}::selection{background:rgba(217,169,77,.28);color:#fff}:focus-visible{outline:2px solid var(--gold);outline-offset:3px}img{max-width:100%}button,a{-webkit-tap-highlight-color:transparent}button,input,textarea,select{font:inherit}.custom-scrollbar{scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}.custom-scrollbar::-webkit-scrollbar{height:5px;width:5px}.custom-scrollbar::-webkit-scrollbar-track{background:transparent}.custom-scrollbar::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:999px}
+.top-ranking-rail,.top-ranking-rail>div,.top-ranking-card,main>.grid>aside,main>.grid>aside.sticky{position:static!important;top:auto!important;height:auto!important;max-height:none!important;overflow:visible!important;align-self:start!important}.top-ranking-card{background:var(--bg-elevated);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.22);transition:border-color .25s ease,transform .25s ease,box-shadow .25s ease}.top-ranking-card:hover{border-color:rgba(217,169,77,.35);box-shadow:0 16px 38px rgba(0,0,0,.28)}
+#header{min-height:68px}#header .main-logo-img{height:44px!important;width:auto}#header .logo-text{font-size:31px!important;line-height:1!important;letter-spacing:2.4px!important}#header .dropdown-selected{color:var(--ink)}#header .download-app-btn{min-width:116px;min-height:40px}#header .download-app-btn span:first-child{font-size:0;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center}#header .download-app-btn span:first-child:before{content:'\f17b';font-family:'Font Awesome 6 Brands';font-size:20px;line-height:1;color:#3DDC84}#header .index-header-input{font-size:15px!important}#header .filters{gap:24px!important}#header .filters button,#header .filters>div>button{font-size:15px!important}#header .search-suggestions{background:rgba(20,20,20,.96)}.index-header-input::placeholder{color:#8b7867}.index-header-menu{background:rgba(0,0,0,.96);border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 30px rgba(0,0,0,1)}.index-header-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,169,77,.08)}
+@media(max-width:1024px){#header .main-logo-img{height:36px!important}#header .logo-text{font-size:27px!important}}@media(max-width:768px){#header .main-logo-img{height:32px!important}#header .logo-text{font-size:23px!important}#header .download-app-btn{min-width:40px;width:40px;padding-inline:0}#header .download-app-btn span:last-child{display:none!important}}
+.filmstrip{height:22px;width:100%;background:repeating-linear-gradient(90deg,var(--line) 0 10px,transparent 10px 26px),var(--bg);position:relative}.filmstrip:before,.filmstrip:after{content:"";position:absolute;left:0;right:0;height:1px;background:var(--line)}.filmstrip:before{top:4px}.filmstrip:after{bottom:4px}@keyframes marquee-pulse{0%,100%{box-shadow:0 0 0 0 rgba(217,169,77,.45),0 0 18px 2px rgba(217,169,77,.22)}50%{box-shadow:0 0 0 7px rgba(217,169,77,0),0 0 26px 6px rgba(217,169,77,.38)}}.btn-play-marquee{animation:marquee-pulse 2.4s ease-in-out infinite}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
