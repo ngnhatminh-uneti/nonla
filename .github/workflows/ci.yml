@@ -41,6 +41,9 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: '1'
 
+      - name: Validate Firestore rules file
+        run: test -f firestore.rules && test -f firebase.json
+
   security:
     runs-on: ubuntu-latest
     timeout-minutes: 10
