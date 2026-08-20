@@ -4,7 +4,6 @@ import Movie from '@/models/Movie';
 const SOURCES = [
   { name: 'NguonC', detailUrl: 'https://phim.nguonc.com/api/film/' },
   { name: 'KKPhim', detailUrl: 'https://phimapi.com/phim/' },
-  { name: 'OPhim', detailUrl: 'https://ophim1.com/v1/api/phim/' },
   { name: 'VSMov', detailUrl: 'https://vsmov.com/api/phim/' },
 ];
 
@@ -22,16 +21,8 @@ const fetchJson = async (url) => {
 async function fetchSourceMovie(source, slug) {
   try {
     const data = await fetchJson(`${source.detailUrl}${encodeURIComponent(slug)}`);
-    let movieInfo;
-    let episodesData = [];
-
-    if (source.name === 'OPhim') {
-      movieInfo = data.data?.item;
-      episodesData = movieInfo?.episodes || [];
-    } else {
-      movieInfo = data.movie || data.item;
-      episodesData = data.episodes || movieInfo?.episodes || [];
-    }
+    const movieInfo = data?.movie || data?.item;
+    const episodesData = data?.episodes || movieInfo?.episodes || [];
 
     const episodes = [];
     if (movieInfo && Array.isArray(episodesData)) {
@@ -102,7 +93,7 @@ export async function crawlMovies() {
       count++;
     }
 
-    return { success: true, message: `Đã đồng bộ đa nguồn ${count} bộ phim.` };
+    return { success: true, message: `Đã đồng bộ 3 nguồn ${count} bộ phim.` };
   } catch (error) {
     console.error('[crawler]', error);
     return { success: false, error: 'Không thể hoàn tất đồng bộ dữ liệu.' };
