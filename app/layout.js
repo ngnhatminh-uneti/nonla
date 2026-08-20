@@ -30,10 +30,15 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="vi">
-      <body className="min-h-screen bg-[#120b09] text-[#f3ead9] antialiased">
+    <html lang="vi" suppressHydrationWarning>
+      <body
+        suppressHydrationWarning
+        className="min-h-screen bg-[#120b09] text-[#f3ead9] antialiased"
+      >
         <Header />
-        <main className="min-h-screen">{children}</main>
+        <main className="min-h-screen" suppressHydrationWarning>
+          {children}
+        </main>
         <Footer />
       </body>
     </html>
