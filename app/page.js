@@ -93,29 +93,34 @@ const BentoGrid = ({ movies, isSeries }) => {
 };
 
 const SidebarRanking = ({ title, movies, isSeries }) => (
-  <div className="mb-5 rounded-xl border border-white/5 bg-white/[.02] p-4">
-    <h3 className="mb-3 flex items-center justify-between border-b border-white/10 pb-3 font-display text-[1.25rem] tracking-wide text-[#d9a94d]"><span>{title}</span><span className="text-xs text-[#777]">TOP 10</span></h3>
+  <section className="rounded-xl border border-[#34241b] bg-[#1d130f] p-5 shadow-[0_12px_30px_rgba(0,0,0,.22)]">
+    <div className="mb-4 flex items-center justify-between border-b border-[#34241b] pb-3">
+      <h3 className="font-display text-[1.45rem] tracking-wide text-[#d9a94d]">{title}</h3>
+      <span className="rounded-full border border-[#7a5c28]/40 bg-[#7a5c28]/10 px-2.5 py-1 text-[10px] font-extrabold tracking-[.12em] text-[#c9a660]">TOP 10</span>
+    </div>
     <div className="flex flex-col">
       {movies.slice(0, 10).map((movie, idx) => (
-        <Link href={`/watch/${movie.slug}`} key={movie.slug || idx} className="group flex items-center gap-3 border-b border-[#34241b] py-2.5 last:border-0">
+        <Link href={`/watch/${movie.slug}`} key={movie.slug || idx} className="group flex items-center gap-3 border-b border-[#34241b] py-3 last:border-0">
           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded font-display text-[18px] shadow-sm ${idx < 3 ? 'bg-[#d9a94d] text-[#1d130a]' : 'border border-[#34241b] bg-[#241a14] text-[#ab9985]'}`}>{idx + 1}</div>
-          <img src={movie.poster} className="h-16 w-12 rounded object-cover shadow-md" alt={movie.title}/>
+          <img src={movie.poster} className="h-16 w-12 rounded object-cover shadow-md ring-1 ring-[#34241b] transition-transform duration-300 group-hover:scale-[1.03]" alt={movie.title}/>
           <div className="min-w-0 flex-1">
-            <div className="mb-1 truncate text-[14px] font-bold text-[#f3ead9] transition-colors group-hover:text-[#d9a94d]">{movie.title}</div>
-            <div className="flex items-center gap-2 text-[11px] font-semibold text-[#6e5c4c]"><span className="text-[#d9a94d]">★ {ratingFromSlug(movie.slug)}</span><span>•</span><span className="truncate">{movie.originalTitle}</span></div>
-            {isSeries && <div className="mt-1 text-[11px] font-bold text-[#b23838]">{movie.episodes}</div>}
+            <div className="mb-1 line-clamp-2 text-[13px] font-bold leading-5 text-[#f3ead9] transition-colors group-hover:text-[#d9a94d]">{movie.title}</div>
+            <div className="flex items-center gap-2 text-[10px] font-semibold text-[#6e5c4c]"><span className="text-[#d9a94d]">★ {ratingFromSlug(movie.slug)}</span><span>•</span><span className="truncate">{movie.originalTitle || movie.year}</span></div>
+            {isSeries && <div className="mt-1 text-[10px] font-bold text-[#b23838]">{movie.episodes}</div>}
           </div>
         </Link>
       ))}
     </div>
-  </div>
+  </section>
 );
 
 export default async function Home() {
   const data = await getHomepageData();
+
   return (
-    <div suppressHydrationWarning className="flex min-h-screen flex-col bg-[#141414] text-[#f3ead9]">
+    <div suppressHydrationWarning className="flex min-h-screen flex-col bg-[#150d0a] text-[#f3ead9]">
       {data.hero.length > 0 && <HeroSlider movies={data.hero} />}
+
       <div className="relative z-[999] -mt-[50px] mb-8 w-full px-[4%] md:-mt-[90px]">
         <h2 className="mb-4 text-[5vw] font-bold text-white drop-shadow-[2px_2px_4px_rgba(0,0,0,.9)] md:text-[1.5vw]">Bạn đang quan tâm gì?</h2>
         <div className="flex snap-x gap-3 overflow-x-auto px-[15px] py-[15px] custom-scrollbar md:-mx-[50px] md:gap-4 md:px-[50px] md:py-[25px] md:justify-center">
@@ -124,23 +129,28 @@ export default async function Home() {
           ].map(([name, slug, grad]) => <Link key={slug} href={`/danh-sach/${slug}`} className="flex h-[60px] w-[140px] shrink-0 snap-start items-center justify-center rounded-[10px] border border-white/10 text-[14px] font-bold text-white shadow-[0_4px_10px_rgba(0,0,0,.5)] transition-all duration-300 hover:-translate-y-2 hover:scale-105 hover:border-white/40 md:h-[80px] md:w-auto md:max-w-[175px] md:min-w-[130px] md:flex-1 md:text-[16px]" style={{ background: grad }}>{name}</Link>)}
         </div>
       </div>
+
       <main className="mx-auto w-full max-w-[1500px] flex-grow px-4 py-8 md:px-8">
         <AdSlot zone="home_top" />
         <UserRows />
-        <div className="grid items-start gap-8 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_360px]">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="flex min-w-0 flex-col gap-[60px]">
             <MovieRowSlider title="Nón Lá Đề Cử" movies={data.deCu} />
-            <section><div className="relative mb-6 flex items-center justify-between border-b border-[#34241b] pb-2 after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:bg-[#d9a94d] "><h3 className="font-display text-[1.7rem] text-[#d9a94d]">Phim Bộ Mới</h3><Link href="/danh-sach/phim-bo" className="text-sm text-[#ab9985] hover:text-white">Xem tất cả ❯</Link></div><BentoGrid movies={data.phimBo} isSeries /></section>
-            <section><div className="relative mb-6 flex items-center justify-between border-b border-[#34241b] pb-2 after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:bg-[#b23838]"><h3 className="font-display text-[1.7rem] text-[#b23838]">Phim Chiếu Rạp</h3><Link href="/danh-sach/phim-chieu-rap" className="text-sm text-[#ab9985] hover:text-white">Xem tất cả ❯</Link></div><div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">{data.chieuRap.slice(0,10).map((movie) => <Link href={`/watch/${movie.slug}`} key={movie.slug} className="group block"><div className="relative aspect-[2/3] overflow-hidden rounded-lg border border-[#34241b] bg-[#241a14] shadow-md"><img src={movie.poster} className="h-full w-full object-cover opacity-90 transition-transform duration-300 group-hover:scale-105" alt={movie.title}/><span className="absolute left-2 top-2 rounded bg-[#d9a94d] px-1.5 py-0.5 text-[10px] font-extrabold text-[#1d130a]">{movie.quality}</span><div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"><div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#b23838] pl-1 text-white">▶</div></div></div><div className="mt-2 text-center"><h4 className="truncate text-[14px] font-bold text-[#f3ead9] group-hover:text-[#b23838]">{movie.title}</h4><p className="text-[12px] text-[#6e5c4c]">{movie.year}</p></div></Link>)}</div></section>
-            <section><div className="relative mb-6 flex items-center justify-between border-b border-[#34241b] pb-2 after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:bg-[#d9a94d]"><h3 className="font-display text-[1.7rem] text-[#d9a94d]">Phim Lẻ Mới</h3><Link href="/danh-sach/phim-le" className="text-sm text-[#ab9985] hover:text-white">Xem tất cả ❯</Link></div><BentoGrid movies={data.phimLe} isSeries={false}/></section>
+            <section><div className="relative mb-6 flex items-center justify-between border-b border-[#34241b] pb-2 after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:bg-[#d9a94d]"><h3 className="font-display text-[1.7rem] text-[#d9a94d]">Phim Bộ Mới</h3><Link href="/danh-sach/phim-bo" className="text-sm font-semibold text-[#ab9985] transition-colors hover:text-white">Xem tất cả ❯</Link></div><BentoGrid movies={data.phimBo} isSeries /></section>
+            <section><div className="relative mb-6 flex items-center justify-between border-b border-[#34241b] pb-2 after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:bg-[#b23838]"><h3 className="font-display text-[1.7rem] text-[#b23838]">Phim Chiếu Rạp</h3><Link href="/danh-sach/phim-chieu-rap" className="text-sm font-semibold text-[#ab9985] transition-colors hover:text-white">Xem tất cả ❯</Link></div><div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">{data.chieuRap.slice(0,10).map((movie) => <Link href={`/watch/${movie.slug}`} key={movie.slug} className="group block"><div className="relative aspect-[2/3] overflow-hidden rounded-lg border border-[#34241b] bg-[#241a14] shadow-md"><img src={movie.poster} className="h-full w-full object-cover opacity-90 transition-transform duration-300 group-hover:scale-105" alt={movie.title}/><span className="absolute left-2 top-2 rounded bg-[#d9a94d] px-1.5 py-0.5 text-[10px] font-extrabold text-[#1d130a]">{movie.quality}</span><div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition group-hover:opacity-100"><div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#b23838] pl-1 text-white shadow-lg">▶</div></div></div><div className="mt-2 text-center"><h4 className="truncate text-[14px] font-bold text-[#f3ead9] group-hover:text-[#b23838]">{movie.title}</h4><p className="text-[12px] text-[#6e5c4c]">{movie.year}</p></div></Link>)}</div></section>
+            <section><div className="relative mb-6 flex items-center justify-between border-b border-[#34241b] pb-2 after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:bg-[#d9a94d]"><h3 className="font-display text-[1.7rem] text-[#d9a94d]">Phim Lẻ Mới</h3><Link href="/danh-sach/phim-le" className="text-sm font-semibold text-[#ab9985] transition-colors hover:text-white">Xem tất cả ❯</Link></div><BentoGrid movies={data.phimLe} isSeries={false}/></section>
             {data.anime.length > 0 && <section className="relative flex flex-col overflow-hidden rounded-2xl border border-[#2a2344] bg-gradient-to-r from-[#0d091a] to-[#1a142c] shadow-[0_15px_40px_rgba(0,0,0,.6)] md:flex-row"><Link href={`/watch/${data.anime[0].slug}`} className="group block aspect-video w-full overflow-hidden md:w-3/5"><img src={data.anime[0].backdrop} className="h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105" alt={data.anime[0].title}/></Link><div className="relative z-10 flex w-full flex-col justify-center p-6 md:w-2/5 md:p-8"><div className="mb-2 flex items-center justify-between"><h3 className="font-display text-[1.2rem] uppercase tracking-widest text-[#8e74e6]">Thế Giới Anime</h3><Link href="/danh-sach/hoat-hinh" className="text-xs text-[#a599cc] hover:text-white">Xem tất cả ❯</Link></div><h4 className="mb-3 text-2xl font-extrabold leading-tight text-white md:text-3xl">{data.anime[0].title}</h4><p className="mb-6 line-clamp-3 text-[13px] leading-relaxed text-[#a599cc]">{data.anime[0].description.replace(/<[^>]*>?/gm, '')}</p><div className="mt-auto grid grid-cols-4 gap-3">{data.anime.slice(1,5).map((anime) => <Link href={`/watch/${anime.slug}`} key={anime.slug} className="aspect-[2/3] overflow-hidden rounded border border-[#3b2e59]"><img src={anime.poster} className="h-full w-full object-cover opacity-80 transition group-hover:opacity-100" alt={anime.title}/></Link>)}</div></div></section>}
           </div>
-          <aside className="sticky top-[90px] flex max-h-[calc(100vh-110px)] flex-col overflow-y-auto pr-1 custom-scrollbar" suppressHydrationWarning>
-            <SidebarRanking title="Top Phim Bộ" movies={data.phimBo} isSeries />
-            <SidebarRanking title="Top Phim Lẻ" movies={data.phimLe} />
+
+          <aside className="sticky top-[92px] self-start" suppressHydrationWarning>
+            <div className="flex flex-col gap-5">
+              <SidebarRanking title="Top Phim Bộ" movies={data.phimBo} isSeries />
+              <SidebarRanking title="Top Phim Lẻ" movies={data.phimLe} />
+            </div>
           </aside>
         </div>
       </main>
+
       <div className="filmstrip" />
     </div>
   );
