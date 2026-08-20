@@ -5,7 +5,7 @@ import Hls from 'hls.js';
 
 const isHlsSource = (src) => /\.m3u8(?:$|\?)/i.test(src || '');
 
-const VideoPlayer = forwardRef(function VideoPlayer({ src, onPlayStateChange }, ref) {
+const VideoPlayer = forwardRef(function VideoPlayer({ src, onPlayStateChange, onEnded }, ref) {
   const videoRef = useRef(null);
   const iframeRef = useRef(null);
   const hlsRef = useRef(null);
@@ -28,18 +28,19 @@ const VideoPlayer = forwardRef(function VideoPlayer({ src, onPlayStateChange }, 
 
     const onPlay = () => onPlayStateChange?.('playing');
     const onPause = () => onPlayStateChange?.('paused');
+    const handleEnded = () => onEnded?.();
     video.addEventListener('play', onPlay);
     video.addEventListener('pause', onPause);
+    video.addEventListener('ended', handleEnded);
 
     const cleanup = () => {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
       video.removeAttribute('src');
       video.load();
       video.removeEventListener('play', onPlay);
       video.removeEventListener('pause', onPause);
+      video.removeEventListener('ended', handleEnded);
     };
 
     const startNative = () => {
@@ -81,7 +82,7 @@ const VideoPlayer = forwardRef(function VideoPlayer({ src, onPlayStateChange }, 
     }
 
     return () => { disposed = true; cleanup(); };
-  }, [src, onPlayStateChange]);
+  }, [src, onEnded, onPlayStateChange]);
 
   if (!src) return <div className="flex h-full items-center justify-center bg-black text-sm text-[#6e5c4c]">Chọn một tập để bắt đầu.</div>;
 
