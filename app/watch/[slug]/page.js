@@ -38,10 +38,7 @@ function toMovieInfo(movie, cdnDomain = 'https://phimimg.com') {
 }
 
 function extractEpisodes(sourceName, data, serversList) {
-  const epsData = sourceName === 'OPhim'
-    ? data?.data?.item?.episodes || []
-    : data?.episodes || data?.movie?.episodes || data?.item?.episodes || [];
-
+  const epsData = data?.episodes || data?.movie?.episodes || data?.item?.episodes || [];
   if (!Array.isArray(epsData)) return;
 
   epsData.forEach((server, index) => {
@@ -82,7 +79,6 @@ function findMatch(items, movie) {
     const nameMatch = (originalTitle && itemOriginal === originalTitle) || itemTitle === title;
     return nameMatch && String(item?.year || '') === year;
   });
-
   if (exactYearMatch) return exactYearMatch;
 
   const closeYearMatch = items.find((item) => {
@@ -93,7 +89,6 @@ function findMatch(items, movie) {
       (itemTitle && title && (itemTitle.includes(title) || title.includes(itemTitle)));
     return closeName && String(item?.year || '') === year;
   });
-
   if (closeYearMatch) return closeYearMatch;
 
   return items.find((item) => {
@@ -136,10 +131,6 @@ async function resolveNguonCFromKkMovie(kkData) {
 
 const getAggregatedMovie = cache(async function getAggregatedMovie(slug) {
   const safeSlug = encodeURIComponent(slug);
-
-  // LỚP 1: luôn lấy đồng thời NguonC + KKPhim.
-  // Homepage Nón Lá dùng slug của KKPhim, nên KKPhim phải được xác định trước
-  // khi quyết định có đảo NguonC thành nguồn gốc hay không.
   const [nguonCData, kkData] = await Promise.all([
     fetchJson(`https://phim.nguonc.com/api/film/${safeSlug}`),
     fetchJson(`https://phimapi.com/phim/${safeSlug}`),
@@ -148,8 +139,8 @@ const getAggregatedMovie = cache(async function getAggregatedMovie(slug) {
   let baseMovieInfo = null;
   const serversList = [];
 
-  // LỚP 2: nếu slug xuất phát từ KKPhim, dùng Tên gốc + Năm phát hành
-  // để tìm ngược trên NguonC. Nếu tìm thấy, NguonC trở thành nguồn chính.
+  // Layer 1: homepage uses KKPhim slugs, so KKPhim identifies the movie first.
+  // NguonC is then resolved by original title + release year.
   if (kkData?.status && kkData?.movie) {
     const matchedNguonCData = await resolveNguonCFromKkMovie(kkData);
 
@@ -157,48 +148,34 @@ const getAggregatedMovie = cache(async function getAggregatedMovie(slug) {
       baseMovieInfo = toMovieInfo(matchedNguonCData.movie);
       extractEpisodes('NguonC', matchedNguonCData, serversList);
     } else {
-      const cdnDomain = 'https://phimimg.com';
-      const kkMovie = kkData.movie;
-      baseMovieInfo = toMovieInfo(kkMovie, cdnDomain);
+      baseMovieInfo = toMovieInfo(kkData.movie, 'https://phimimg.com');
     }
 
-    // KKPhim vẫn luôn là fallback/source hợp lệ, kể cả khi NguonC đã được chọn.
+    // KKPhim always remains available as the fallback source.
     extractEpisodes('KKPhim', kkData, serversList);
   } else if (nguonCData?.movie) {
-    // Link NguonC cũ / deep-link trực tiếp: giữ nguyên khả năng đọc bằng slug.
+    // Preserve direct/deep links created from NguonC.
     baseMovieInfo = toMovieInfo(nguonCData.movie);
     extractEpisodes('NguonC', nguonCData, serversList);
   }
 
   if (!baseMovieInfo) return null;
 
-  // LỚP 3: giữ nguyên cơ chế truy quét vệ tinh theo tên + năm.
-  const extraSources = [
-    {
-      name: 'OPhim',
-      detailUrl: (value) => `https://ophim1.com/v1/api/phim/${encodeURIComponent(value)}`,
-      searchUrl: (keyword) => `https://ophim1.com/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}`,
-    },
-    {
-      name: 'VSMov',
-      detailUrl: (value) => `https://vsmov.com/api/phim/${encodeURIComponent(value)}`,
-      searchUrl: (keyword) => `https://vsmov.com/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}`,
-    },
-  ];
+  // Layer 3: the third and final source is VSMov.
+  const vsmovDetail = (value) => `https://vsmov.com/api/phim/${encodeURIComponent(value)}`;
+  const vsmovSearch = (keyword) => `https://vsmov.com/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}`;
 
-  await Promise.all(extraSources.map(async (source) => {
-    let data = await fetchJson(source.detailUrl(slug));
+  let vsmovData = await fetchJson(vsmovDetail(slug));
 
-    if (!isValidMoviePayload(data)) {
-      const keyword = cleanSearchTitle(baseMovieInfo.originalTitle || baseMovieInfo.title);
-      if (!keyword) return;
-
-      let searchData = await fetchJson(source.searchUrl(keyword));
+  if (!isValidMoviePayload(vsmovData)) {
+    const keyword = cleanSearchTitle(baseMovieInfo.originalTitle || baseMovieInfo.title);
+    if (keyword) {
+      let searchData = await fetchJson(vsmovSearch(keyword));
       let items = searchData?.data?.items || searchData?.items || [];
 
       if (!items.length) {
         const cleanedKeyword = cleanSearchTitle(keyword);
-        searchData = await fetchJson(source.searchUrl(cleanedKeyword));
+        searchData = await fetchJson(vsmovSearch(cleanedKeyword));
         items = searchData?.data?.items || searchData?.items || [];
       }
 
@@ -209,18 +186,17 @@ const getAggregatedMovie = cache(async function getAggregatedMovie(slug) {
       });
 
       if (match?.slug) {
-        data = await fetchJson(source.detailUrl(match.slug));
+        vsmovData = await fetchJson(vsmovDetail(match.slug));
       }
     }
+  }
 
-    if (isValidMoviePayload(data)) {
-      extractEpisodes(source.name, data, serversList);
-    }
-  }));
+  if (isValidMoviePayload(vsmovData)) {
+    extractEpisodes('VSMov', vsmovData, serversList);
+  }
 
-  const peoples = await getMoviePeoplesAPI(baseMovieInfo.slug || slug);
+  const peoples = await getMoviePeoplesAPI(kkData?.movie?.slug || baseMovieInfo.slug || slug);
 
-  // Loại bỏ server/episode trùng nhau khi nhiều nguồn trả cùng stream.
   const uniqueServers = [];
   const seenServerKeys = new Set();
   for (const server of serversList) {
