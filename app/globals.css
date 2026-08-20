@@ -47,7 +47,6 @@ button, input, textarea, select { font: inherit; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 999px; }
 
-/* Top Phim: sidebar bình thường, cuộn cùng toàn trang */
 .top-ranking-rail,
 .top-ranking-rail > div,
 .top-ranking-card {
@@ -57,7 +56,6 @@ button, input, textarea, select { font: inherit; }
   height: auto !important;
   overflow: visible !important;
 }
-/* app/page.js đang dùng sticky trực tiếp trên <aside>; override rõ ràng để không sticky/fixed */
 main > .grid > aside,
 main > .grid > aside.sticky {
   position: static !important;
@@ -78,7 +76,6 @@ main > .grid > aside.sticky {
   box-shadow: 0 16px 38px rgba(0,0,0,.28);
 }
 
-/* Header: gần cấu trúc index.html, màu sắc theo ui/phase-1-premium */
 #header { min-height: 68px; }
 #header .main-logo-img { height: 44px !important; width: auto; }
 #header .logo-text { font-size: 31px !important; line-height: 1 !important; letter-spacing: 2.4px !important; }
