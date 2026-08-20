@@ -1,44 +1,95 @@
+import Image from 'next/image';
 import Link from 'next/link';
 
+const FALLBACK_IMAGE = 'https://via.placeholder.com/600x900?text=No+Poster';
+
+function normalizeImage(path, cdn = 'https://phimimg.com') {
+  if (!path) return FALLBACK_IMAGE;
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${cdn.replace(/\/$/, '')}/${String(path).replace(/^\//, '')}`;
+}
+
 async function searchMovies(keyword) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    const res = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}`, { cache: 'no-store' });
+    const res = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}`, {
+      next: { revalidate: 120 },
+      signal: controller.signal,
+    });
+    if (!res.ok) return [];
     const data = await res.json();
-    return data?.items || [];
-  } catch (error) { return []; }
+    return (data?.items || []).map((movie) => ({
+      title: movie.name || 'Đang cập nhật',
+      originalTitle: movie.original_name || movie.origin_name || '',
+      slug: movie.slug,
+      poster: normalizeImage(movie.poster_url || movie.thumb_url),
+      year: movie.year || 'Mới',
+      quality: movie.quality || 'HD',
+      episodes: movie.episode_current || 'Tập mới',
+    }));
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export default async function SearchPage({ searchParams }) {
-  const resolvedSearchParams = await searchParams;
-  const keyword = resolvedSearchParams.keyword || '';
+  const params = await searchParams;
+  const keyword = String(params?.keyword || '').trim().slice(0, 120);
   const items = keyword ? await searchMovies(keyword) : [];
 
   return (
-    <div className="min-h-screen bg-[#150d0a] text-[#f3ead9] pt-24 pb-20 px-6 md:px-12 max-w-[1500px] mx-auto">
-      <h1 className="font-display text-[2rem] text-[#d9a94d] border-b border-[#34241b] pb-4 mb-8">
-        Kết quả tìm kiếm cho: <span className="text-white">"{keyword}"</span>
-      </h1>
-      
-      {items.length === 0 ? (
-        <div className="text-center py-20 text-[#ab9985]">Không tìm thấy bộ phim nào phù hợp.</div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
-          {items.map((movie) => (
-            <Link href={`/watch/${movie.slug}`} key={movie.slug} className="group block cursor-pointer">
-              <div className="aspect-[2/3] rounded-lg overflow-hidden border border-[#34241b] bg-[#241a14] relative transition-all duration-300 group-hover:-translate-y-2 group-hover:border-[#d9a94d]">
-                <img src={movie.thumb_url || movie.poster_url} className="w-full h-full object-cover opacity-90" alt={movie.name} />
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity z-10">
-                  <div className="w-12 h-12 bg-[#b23838] rounded-full flex items-center justify-center text-white pl-1">▶</div>
-                </div>
-              </div>
-              <div className="mt-3">
-                <h4 className="text-[14px] font-bold text-[#f3ead9] truncate">{movie.name}</h4>
-                <p className="text-[12px] text-[#6e5c4c] truncate">{movie.year || 'Mới'}</p>
-              </div>
-            </Link>
-          ))}
+    <main className="min-h-screen bg-[#120b09] px-4 pb-16 pt-[100px] md:px-8">
+      <div className="mx-auto max-w-[1500px]">
+        <div className="mb-8 border-b border-white/10 pb-5">
+          <span className="text-[10px] font-extrabold uppercase tracking-[.28em] text-[#d9a94d]">Tìm kiếm</span>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-white md:text-4xl">
+            {keyword ? <>Kết quả cho <span className="text-[#d9a94d]">“{keyword}”</span></> : 'Khám phá phim'}
+          </h1>
         </div>
-      )}
-    </div>
+
+        {!keyword ? (
+          <div className="rounded-2xl border border-white/10 bg-white/[.03] px-6 py-16 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d9a94d]/10 text-xl text-[#d9a94d]">⌕</div>
+            <h2 className="text-lg font-bold text-white">Nhập tên phim để bắt đầu</h2>
+            <p className="mt-2 text-sm text-[#8f7b69]">Bạn có thể tìm theo tên tiếng Việt hoặc tên gốc.</p>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-white/[.03] px-6 py-16 text-center">
+            <h2 className="text-xl font-bold text-white">Không tìm thấy phim phù hợp</h2>
+            <p className="mt-2 text-sm text-[#8f7b69]">Thử từ khóa ngắn hơn hoặc tìm theo tên gốc.</p>
+            <Link href="/" className="mt-5 inline-flex rounded-full bg-[#d9a94d] px-5 py-2.5 text-sm font-extrabold text-[#1d130a]">Về trang chủ</Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-5">
+            {items.map((movie) => (
+              <Link href={`/watch/${movie.slug}`} key={movie.slug} className="group block">
+                <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-white/10 bg-[#21150f] shadow-lg transition duration-300 group-hover:-translate-y-1 group-hover:border-[#d9a94d]/50 group-hover:shadow-2xl">
+                  <Image
+                    src={movie.poster}
+                    alt={movie.title}
+                    fill
+                    sizes="(max-width: 639px) 46vw, (max-width: 767px) 30vw, (max-width: 1023px) 23vw, (max-width: 1279px) 18vw, 15vw"
+                    className="object-cover transition duration-500 group-hover:scale-[1.04] group-hover:opacity-75"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent" />
+                  <span className="absolute left-2 top-2 rounded-md border border-white/10 bg-black/65 px-2 py-1 text-[10px] font-extrabold text-[#d9a94d] backdrop-blur">{movie.quality}</span>
+                  <span className="absolute bottom-2 left-1/2 max-w-[90%] -translate-x-1/2 truncate rounded-md border border-white/10 bg-[#7c2020]/90 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">{movie.episodes}</span>
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition group-hover:opacity-100">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#b23838] pl-1 text-white shadow-[0_0_30px_rgba(178,56,56,.45)]">▶</div>
+                  </div>
+                </div>
+                <div className="mt-2.5 min-w-0">
+                  <h2 className="truncate text-sm font-bold text-[#f3ead9] transition-colors group-hover:text-[#d9a94d]">{movie.title}</h2>
+                  <p className="truncate text-xs text-[#6e5c4c]">{movie.originalTitle || movie.year}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
