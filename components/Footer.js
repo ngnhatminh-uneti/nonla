@@ -16,11 +16,10 @@ export default function Footer() {
     <footer className="mt-auto border-t border-white/[.07] bg-[#0e0907]">
       <div className="mx-auto max-w-[1600px] px-4 py-12 md:px-8">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
-          <div className="lg:col-span-1">
+          <div>
             <Link href="/" className="font-display text-3xl tracking-[.12em] text-[#d9a94d]">NÓN LÁ</Link>
-            <p className="mt-4 max-w-sm text-sm leading-6 text-[#897666]">
-              Không gian xem phim trực tuyến với giao diện điện ảnh, tối ưu cho desktop và mobile.
-            </p>
+            <p className="mt-4 max-w-sm text-sm leading-6 text-[#897666]">Không gian xem phim trực tuyến với giao diện điện ảnh, tối ưu cho desktop và mobile.</p>
+            <Link href="/tai-app" className="mt-5 inline-flex rounded-full border border-[#b23838]/30 bg-[#b23838]/10 px-4 py-2 text-xs font-bold text-[#e29b84] transition hover:bg-[#b23838]/20">Thông tin App</Link>
           </div>
 
           <div>
@@ -36,21 +35,17 @@ export default function Footer() {
           <div>
             <h2 className="mb-4 text-sm font-extrabold uppercase tracking-wider text-white">Thể loại</h2>
             <div className="flex flex-wrap gap-2">
-              {genreLinks.map(([name, slug]) => (
-                <Link key={slug} href={`/danh-sach/${slug}`} className="rounded-full border border-white/[.08] bg-white/[.03] px-3 py-1.5 text-[11px] font-semibold text-[#897666] transition hover:border-[#d9a94d]/40 hover:bg-[#d9a94d]/10 hover:text-[#d9a94d]">
-                  {name}
-                </Link>
-              ))}
+              {genreLinks.map(([name, slug]) => <Link key={slug} href={`/danh-sach/${slug}`} className="rounded-full border border-white/[.08] bg-white/[.03] px-3 py-1.5 text-[11px] font-semibold text-[#897666] transition hover:border-[#d9a94d]/40 hover:bg-[#d9a94d]/10 hover:text-[#d9a94d]">{name}</Link>)}
             </div>
           </div>
 
           <div>
             <h2 className="mb-4 text-sm font-extrabold uppercase tracking-wider text-white">Thông tin</h2>
             <div className="space-y-3 text-sm text-[#897666]">
-              <Link className="block transition hover:text-[#d9a94d]" href="/">Giới thiệu</Link>
-              <Link className="block transition hover:text-[#d9a94d]" href="/">Điều khoản sử dụng</Link>
-              <Link className="block transition hover:text-[#d9a94d]" href="/">Chính sách bảo mật</Link>
-              <Link className="block transition hover:text-[#d9a94d]" href="/">Liên hệ</Link>
+              <Link className="block transition hover:text-[#d9a94d]" href="/gioi-thieu">Giới thiệu</Link>
+              <Link className="block transition hover:text-[#d9a94d]" href="/dieu-khoan">Điều khoản sử dụng</Link>
+              <Link className="block transition hover:text-[#d9a94d]" href="/chinh-sach-bao-mat">Chính sách bảo mật</Link>
+              <Link className="block transition hover:text-[#d9a94d]" href="/lien-he">Liên hệ</Link>
             </div>
           </div>
         </div>
