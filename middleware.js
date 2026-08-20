@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 
 export function middleware(request) {
+  if (request.nextUrl.pathname === '/geo-block') return NextResponse.next();
+
   const strictGeo = process.env.GEO_STRICT !== 'false';
   if (!strictGeo) return NextResponse.next();
 
