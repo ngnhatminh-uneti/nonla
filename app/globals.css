@@ -9,3 +9,24 @@
 .auth-modal-overlay{position:fixed!important;inset:0!important;z-index:10000!important;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);backdrop-filter:blur(8px)}.auth-modal-overlay .auth-modal{position:relative;z-index:10001;width:min(450px,92vw);border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(0,0,0,.96);box-shadow:0 20px 70px rgba(0,0,0,.85)}.auth-modal-overlay input{font-family:'Nunito',sans-serif}
 @media(max-width:1024px){#header .main-logo-img{height:36px!important}#header .logo-text{font-size:27px!important}}@media(max-width:768px){#header .main-logo-img{height:32px!important}#header .logo-text{font-size:23px!important}#header .download-app-btn{min-width:40px;width:40px;padding-inline:0}#header .download-app-btn .download-label{display:none!important}}
 .filmstrip{height:22px;width:100%;background:repeating-linear-gradient(90deg,var(--line) 0 10px,transparent 10px 26px),var(--bg);position:relative}.filmstrip:before,.filmstrip:after{content:"";position:absolute;left:0;right:0;height:1px;background:var(--line)}.filmstrip:before{top:4px}.filmstrip:after{bottom:4px}@keyframes marquee-pulse{0%,100%{box-shadow:0 0 0 0 rgba(217,169,77,.45),0 0 18px 2px rgba(217,169,77,.22)}50%{box-shadow:0 0 0 7px rgba(217,169,77,0),0 0 26px 6px rgba(217,169,77,.38)}}.btn-play-marquee{animation:marquee-pulse 2.4s ease-in-out infinite}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* WATCH: giữ toàn bộ trải nghiệm trong palette NÓN LÁ */
+main:has(#watch-player-frame){background:var(--bg)!important;color:var(--ink)!important}
+main:has(#watch-player-frame) #watch-player-frame{border-color:var(--line)!important;background:#0b0807!important;box-shadow:0 24px 70px rgba(0,0,0,.72)!important}
+main:has(#watch-player-frame) .watch-player-shell{background:#0b0807!important}
+main:has(#watch-player-frame) #watch-player-frame + div{display:none!important}
+main:has(#watch-player-frame) aside{position:sticky!important;top:92px!important;align-self:start!important;height:fit-content!important;max-height:none!important;overflow:visible!important}
+main:has(#watch-player-frame) aside>div{border-color:var(--line)!important;background:var(--bg-elevated)!important}
+main:has(#watch-player-frame) aside .absolute.inset-0{background:linear-gradient(to top,rgba(18,11,9,.98),rgba(18,11,9,.12),transparent)!important}
+main:has(#watch-player-frame) h1,main:has(#watch-player-frame) h2{font-family:'Nunito',sans-serif!important}
+main:has(#watch-player-frame) p.mt-5.max-w-4xl{border-left-color:var(--gold)!important;background:linear-gradient(135deg,rgba(217,169,77,.08),rgba(127,32,32,.06))!important;border:1px solid rgba(217,169,77,.12)!important;border-left-width:4px!important;border-radius:0 16px 16px 0!important;box-shadow:0 12px 30px rgba(0,0,0,.18)!important;color:#d9cbbd!important;padding:20px 22px!important;line-height:1.9!important}
+main:has(#watch-player-frame) .bg-\[\#181818\]{background:var(--bg-elevated)!important;border-color:var(--line)!important}
+main:has(#watch-player-frame) .bg-\[\#e50914\]{background:var(--maroon-bright)!important}
+main:has(#watch-player-frame) .border-\[\#e50914\]{border-color:var(--maroon-bright)!important}
+main:has(#watch-player-frame) .text-\[\#e50914\]{color:var(--maroon-bright)!important}
+main:has(#watch-player-frame) .bg-white\/10{background:rgba(255,255,255,.045)!important}
+main:has(#watch-player-frame) .border-white\/10{border-color:var(--line)!important}
+main:has(#watch-player-frame) .bg-\[\#46d369\]{background:var(--gold)!important;color:#1b1209!important}
+main:has(#watch-player-frame) .xl\:sticky{position:sticky!important}
+#watch-player-frame:fullscreen{background:#090706!important;border-radius:0!important}
+#watch-player-frame:fullscreen .watch-player-shell{height:100vh!important}
