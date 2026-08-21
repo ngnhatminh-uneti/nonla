@@ -27,6 +27,7 @@ main:has(#watch-player-frame) .text-\[\#e50914\]{color:var(--maroon-bright)!impo
 main:has(#watch-player-frame) .bg-white\/10{background:rgba(255,255,255,.045)!important}
 main:has(#watch-player-frame) .border-white\/10{border-color:var(--line)!important}
 main:has(#watch-player-frame) .bg-\[\#46d369\]{background:var(--gold)!important;color:#1b1209!important}
+main:has(#watch-player-frame) label:has(input[type="checkbox"]){display:none!important}
 main:has(#watch-player-frame) .xl\:sticky{position:sticky!important}
 #watch-player-frame:fullscreen{background:#090706!important;border-radius:0!important}
 #watch-player-frame:fullscreen .watch-player-shell{height:100vh!important}
