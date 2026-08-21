@@ -6,39 +6,54 @@ const FALLBACK_IMAGE = 'https://via.placeholder.com/600x900?text=No+Poster';
 function normalizeImage(path, cdn = 'https://phimimg.com') {
   if (!path) return FALLBACK_IMAGE;
   if (/^https?:\/\//i.test(path)) return path;
-  return `${cdn.replace(/\/$/, '')}/${String(path).replace(/^\//, '')}`;
+  return `${String(cdn).replace(/\/$/, '')}/${String(path).replace(/^\//, '')}`;
 }
 
-async function searchMovies(keyword) {
+async function searchMovies(keyword, page = 1) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    const res = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}`, {
-      next: { revalidate: 120 },
+    const response = await fetch(`https://phimapi.com/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}&page=${page}`, {
+      next: { revalidate: 60 },
       signal: controller.signal,
     });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data?.items || []).map((movie) => ({
-      title: movie.name || 'Đang cập nhật',
-      originalTitle: movie.original_name || movie.origin_name || '',
+    if (!response.ok) return { items: [], pagination: {} };
+    const json = await response.json();
+    const payload = json?.data || json || {};
+    const cdn = payload?.APP_DOMAIN_CDN_IMAGE || json?.pathImage || 'https://phimimg.com';
+    const items = (payload?.items || json?.items || []).map((movie) => ({
+      title: movie.name || movie.title || 'Đang cập nhật',
+      originalTitle: movie.origin_name || movie.original_title || '',
       slug: movie.slug,
-      poster: normalizeImage(movie.poster_url || movie.thumb_url),
+      poster: normalizeImage(movie.poster_url || movie.thumb_url, cdn),
       year: movie.year || 'Mới',
       quality: movie.quality || 'HD',
       episodes: movie.episode_current || 'Tập mới',
     }));
+    return { items, pagination: payload?.params?.pagination || payload?.pagination || {} };
   } catch {
-    return [];
+    return { items: [], pagination: {} };
   } finally {
     clearTimeout(timeout);
   }
 }
 
+function resolveTotalPages(pagination = {}, currentPage = 1, itemCount = 0) {
+  const explicit = Number(pagination.totalPages || pagination.total_pages || 0);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const totalItems = Number(pagination.totalItems || pagination.total_items || 0);
+  const perPage = Number(pagination.totalItemsPerPage || pagination.itemsPerPage || pagination.items_per_page || pagination.limit || itemCount || 0);
+  if (totalItems > 0 && perPage > 0) return Math.max(currentPage, Math.ceil(totalItems / perPage));
+  return currentPage + (itemCount > 0 ? 1 : 0);
+}
+
 export default async function SearchPage({ searchParams }) {
   const params = await searchParams;
-  const keyword = String(params?.keyword || '').trim().slice(0, 120);
-  const items = keyword ? await searchMovies(keyword) : [];
+  const keyword = String(params?.q || params?.keyword || '').trim().slice(0, 120);
+  const page = Math.max(1, Number.parseInt(String(params?.page || '1'), 10) || 1);
+  const result = keyword ? await searchMovies(keyword, page) : { items: [], pagination: {} };
+  const items = result.items;
+  const totalPages = keyword ? resolveTotalPages(result.pagination, page, items.length) : 1;
 
   return (
     <main className="min-h-screen bg-[#120b09] px-4 pb-16 pt-[100px] md:px-8">
@@ -52,7 +67,7 @@ export default async function SearchPage({ searchParams }) {
 
         {!keyword ? (
           <div className="rounded-2xl border border-white/10 bg-white/[.03] px-6 py-16 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d9a94d]/10 text-xl text-[#d9a94d]">⌕</div>
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#d9a94d]/10 text-xl text-[#d9a94d]"><i className="fa-solid fa-magnifying-glass" /></div>
             <h2 className="text-lg font-bold text-white">Nhập tên phim để bắt đầu</h2>
             <p className="mt-2 text-sm text-[#8f7b69]">Bạn có thể tìm theo tên tiếng Việt hoặc tên gốc.</p>
           </div>
@@ -63,31 +78,34 @@ export default async function SearchPage({ searchParams }) {
             <Link href="/" className="mt-5 inline-flex rounded-full bg-[#d9a94d] px-5 py-2.5 text-sm font-extrabold text-[#1d130a]">Về trang chủ</Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-5">
-            {items.map((movie) => (
-              <Link href={`/watch/${movie.slug}`} key={movie.slug} className="group block">
-                <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-white/10 bg-[#21150f] shadow-lg transition duration-300 group-hover:-translate-y-1 group-hover:border-[#d9a94d]/50 group-hover:shadow-2xl">
-                  <Image
-                    src={movie.poster}
-                    alt={movie.title}
-                    fill
-                    sizes="(max-width: 639px) 46vw, (max-width: 767px) 30vw, (max-width: 1023px) 23vw, (max-width: 1279px) 18vw, 15vw"
-                    className="object-cover transition duration-500 group-hover:scale-[1.04] group-hover:opacity-75"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent" />
-                  <span className="absolute left-2 top-2 rounded-md border border-white/10 bg-black/65 px-2 py-1 text-[10px] font-extrabold text-[#d9a94d] backdrop-blur">{movie.quality}</span>
-                  <span className="absolute bottom-2 left-1/2 max-w-[90%] -translate-x-1/2 truncate rounded-md border border-white/10 bg-[#7c2020]/90 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">{movie.episodes}</span>
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition group-hover:opacity-100">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#b23838] pl-1 text-white shadow-[0_0_30px_rgba(178,56,56,.45)]">▶</div>
+          <>
+            <div className="mb-5 flex items-center justify-between text-xs text-[#6e5c4c]">
+              <span>KKPhim • Trang {page}{totalPages > 1 ? ` / ${totalPages}` : ''}</span>
+              <span>{items.length} kết quả</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-5">
+              {items.map((movie) => (
+                <Link href={`/watch/${movie.slug}`} key={movie.slug} className="group block">
+                  <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-white/10 bg-[#21150f] shadow-lg transition duration-300 group-hover:-translate-y-1 group-hover:border-[#d9a94d]/50 group-hover:shadow-2xl">
+                    <Image src={movie.poster} alt={movie.title} fill sizes="(max-width: 639px) 46vw, (max-width: 767px) 30vw, (max-width: 1023px) 23vw, (max-width: 1279px) 18vw, 15vw" className="object-cover transition duration-500 group-hover:scale-[1.04] group-hover:opacity-75" />
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent" />
+                    <span className="absolute left-2 top-2 rounded-md border border-white/10 bg-black/65 px-2 py-1 text-[10px] font-extrabold text-[#d9a94d] backdrop-blur">{movie.quality}</span>
+                    <span className="absolute bottom-2 left-1/2 max-w-[90%] -translate-x-1/2 truncate rounded-md border border-white/10 bg-[#7c2020]/90 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">{movie.episodes}</span>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition group-hover:opacity-100"><div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#b23838] pl-1 text-white shadow-[0_0_30px_rgba(178,56,56,.45)]">▶</div></div>
                   </div>
-                </div>
-                <div className="mt-2.5 min-w-0">
-                  <h2 className="truncate text-sm font-bold text-[#f3ead9] transition-colors group-hover:text-[#d9a94d]">{movie.title}</h2>
-                  <p className="truncate text-xs text-[#6e5c4c]">{movie.originalTitle || movie.year}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+                  <div className="mt-2.5 min-w-0"><h2 className="truncate text-sm font-bold text-[#f3ead9] transition-colors group-hover:text-[#d9a94d]">{movie.title}</h2><p className="truncate text-xs text-[#6e5c4c]">{movie.originalTitle || movie.year}</p></div>
+                </Link>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <nav aria-label="Phân trang tìm kiếm" className="mt-12 flex items-center justify-center gap-2">
+                {page > 1 ? <Link href={`/tim-kiem?q=${encodeURIComponent(keyword)}&page=${page - 1}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[.04] text-[#ab9985] hover:border-[#d9a94d]/40 hover:text-white">‹</Link> : <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/5 bg-white/[.02] text-[#40352e]">‹</span>}
+                <span className="rounded-full border border-white/10 bg-white/[.03] px-4 py-2 text-xs font-bold text-[#bda996]">Trang {page} / {totalPages}</span>
+                {page < totalPages ? <Link href={`/tim-kiem?q=${encodeURIComponent(keyword)}&page=${page + 1}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[.04] text-[#ab9985] hover:border-[#d9a94d]/40 hover:text-white">›</Link> : <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/5 bg-white/[.02] text-[#40352e]">›</span>}
+              </nav>
+            )}
+          </>
         )}
       </div>
     </main>
