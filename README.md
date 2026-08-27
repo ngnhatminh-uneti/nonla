@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# NÓN LÁ
 
-## Getting Started
+Website xem phim online bằng Next.js App Router, tập trung vào trải nghiệm điện ảnh, responsive UI, tốc độ tải và khả năng phục hồi khi nguồn dữ liệu bên ngoài gặp lỗi.
 
-First, run the development server:
+## Nguồn dữ liệu phim
+
+NÓN LÁ hiện chỉ tích hợp đúng 3 nguồn:
+
+- **KKPhim** — nguồn dữ liệu của homepage và fallback chính.
+- **NguonC** — được ưu tiên khi slug từ KKPhim được đối chiếu bằng **tên gốc + năm phát hành**.
+- **VSMov** — nguồn vệ tinh/fallback thứ ba, dò theo slug hoặc tên + năm.
+
+Không còn tích hợp API, image host hoặc crawler của OPhim.
+
+## Tính năng chuyển từ `index.html`
+
+- Header legacy: logo, dropdown Thể Loại / Quốc Gia / Danh sách, search suggestion, room code, Tải App, Firebase auth và menu admin.
+- Firebase Authentication + Firestore theo project `nonla-phim`.
+- `users/{uid}/history` cho **Đang xem / Xem tiếp** và tiến độ tập.
+- `users/{uid}/favorites` cho **Yêu thích**.
+- `rooms/{roomCode}` cho **Phòng xem chung**, đồng bộ tập, play/pause và thời gian giữa host/guest.
+- Player frame **16:9**, HLS/native playback, iframe fallback và hotkeys `Space/K`, `J/L`, `N/P`, `M`, `F`, `X`, `↑/↓`.
+- Quảng cáo Firebase 6 zone: `home_top`, `movie_bottom`, `side_left`, `side_right`, `pause_ad`, `popup_ad`.
+- Admin quảng cáo cho tài khoản `nghienphim26@gmail.com`.
+- Geo gate chỉ cho phép Việt Nam ở client (`api.country.is`) và kiểm tra country headers ở middleware.
+- Hai khối Top Phim Bộ / Top Phim Lẻ ở sidebar dùng `position: sticky` và giới hạn chiều cao, nên không trôi khỏi viewport khi cuộn trang.
+
+## Chạy local
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Mở `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Biến môi trường
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.example` thành `.env.local`:
 
-## Learn More
+```env
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+GEO_STRICT=true
+MONGODB_URI=
+CRON_SECRET=
+```
 
-To learn more about Next.js, take a look at the following resources:
+`CRON_SECRET` là bắt buộc khi gọi `POST /api/crawler`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Firebase rules
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Repository có `firebase.json` + `firestore.rules` để giới hạn:
 
-## Deploy on Vercel
+- `users`: chỉ chính chủ tài khoản;
+- `rooms`: chỉ tài khoản đăng nhập được đọc/tạo, chủ phòng mới được cập nhật/xóa;
+- `ads`: đọc công khai, chỉ email admin mới được ghi.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Deploy bằng Firebase CLI:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+firebase deploy --only firestore:rules
+```
+
+## Kiểm tra production
+
+```bash
+npm run lint
+npm audit --audit-level=high
+npm run build
+npm start
+```
+
+GitHub Actions trong `.github/workflows/ci.yml` chạy lint, dependency audit, production build, Firebase file validation và CodeQL.
